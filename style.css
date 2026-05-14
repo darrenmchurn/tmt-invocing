@@ -162,7 +162,7 @@ textarea { resize: vertical; min-height: 72px; }
   color: var(--muted);
   margin-top: 4px;
 }
-.invoice-meta-block { flex-shrink: 0; width: 220px; }
+.invoice-meta-block { flex-shrink: 0; width: 300px; }
 .invoice-meta-block label { text-align: left; }
 .inv-number-input {
   font-weight: 700;
@@ -379,7 +379,7 @@ textarea { resize: vertical; min-height: 72px; }
 
 /* ── Responsive — tablet (641px–900px) ── */
 @media (min-width: 641px) and (max-width: 900px) {
-  .invoice-meta-block { width: 200px; }
+  .invoice-meta-block { width: 270px; }
   .company-block .company-name { font-size: 22px; }
 }
 

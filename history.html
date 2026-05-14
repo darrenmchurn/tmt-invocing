@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TMT Invoicing — History</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .stats-bar {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding: 14px 20px;
+      background: var(--brand-light);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .stats-bar span { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<nav class="top-nav">
+  <span class="brand">TMT Waste Solutions</span>
+  <a href="index.html">New Invoice</a>
+  <a href="history.html" class="active">Invoice History</a>
+</nav>
+
+<div class="page-wrap">
+
+  <div id="alert-box" class="alert" style="display:none"></div>
+
+  <!-- Stats summary -->
+  <div class="stats-bar" id="stats-bar"></div>
+
+  <!-- Actions -->
+  <div class="action-bar no-print" style="margin-bottom:16px">
+    <a href="index.html" class="btn btn-primary">&#43; New Invoice</a>
+    <button class="btn btn-success" id="btn-export-xlsx" style="display:none">
+      &#128196; Export All to Excel
+    </button>
+  </div>
+
+  <!-- History table -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="history-table" id="history-table" style="display:none">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Date</th>
+          <th>Client</th>
+          <th>Total</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="history-body"></tbody>
+    </table>
+
+    <div id="empty-state" class="empty-state" style="display:none">
+      <p>No invoices yet.</p>
+      <a href="index.html" class="btn btn-primary">Create Your First Invoice</a>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<!-- Preview modal -->
+<div class="modal-backdrop" id="preview-modal">
+  <div class="modal-box">
+    <button class="modal-close" id="btn-modal-close" title="Close">&times;</button>
+    <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-accent" id="btn-modal-pdf">&#128196; Download PDF</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- CDN libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="history.js"></script>
+</body>
+</html>

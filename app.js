@@ -206,7 +206,7 @@ function collectInvoice() {
     taxRate,
     taxAmount: taxAmt,
     total:     subtotal + taxAmt,
-    paymentLink: TMT_CONFIG.paymentLink,
+    paymentLink: document.getElementById('payment-link-input').value.trim(),
     notes:       document.getElementById('notes').value.trim(),
     status:      'unpaid',
     createdAt:   new Date().toISOString(),
@@ -246,11 +246,10 @@ function renderPreview(inv) {
       <td class="right">${fmtMoney(it.total)}</td>
     </tr>`).join('');
 
-  const paymentBlock = cfg.paymentLink
+  const paymentBlock = inv.paymentLink
     ? `<div class="preview-payment">
          <strong>Payment:</strong>
-         <a href="${escHtml(cfg.paymentLink)}" target="_blank">${escHtml(cfg.paymentLabel)}</a>
-         — ${escHtml(cfg.paymentLink)}
+         <a href="${escHtml(inv.paymentLink)}" target="_blank">${escHtml(inv.paymentLink)}</a>
        </div>`
     : '';
 
@@ -354,6 +353,7 @@ function newInvoice() {
   ['client-name','client-address','client-email','client-phone','notes'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  document.getElementById('payment-link-input').value = TMT_CONFIG.paymentLink;
 
   document.getElementById('tax-rate').value = TMT_CONFIG.defaultTaxRate;
   document.getElementById('line-items-body').innerHTML = '';
@@ -384,19 +384,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirm('Start a new invoice? Unsaved changes will be lost.')) newInvoice();
   });
 
-  // Payment link display
-  const cfg = TMT_CONFIG;
-  const plBlock = document.getElementById('payment-link-display');
-  if (plBlock) {
-    if (cfg.paymentLink) {
-      plBlock.innerHTML = `Pay online: <a href="${escHtml(cfg.paymentLink)}" target="_blank">${escHtml(cfg.paymentLink)}</a>`;
-      plBlock.style.display = 'block';
-    } else {
-      plBlock.style.display = 'none';
-    }
-  }
-
   // Populate company info display
+  const cfg = TMT_CONFIG;
   const companyLines = [cfg.phone, cfg.email, cfg.address].filter(Boolean).join(' · ');
   const subEl = document.getElementById('company-sub');
   if (subEl) subEl.textContent = companyLines;

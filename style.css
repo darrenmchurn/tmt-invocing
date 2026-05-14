@@ -335,11 +335,81 @@ textarea { resize: vertical; min-height: 72px; }
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
+  /* Prevent iOS Safari auto-zoom on focus */
+  input, select, textarea { font-size: 16px !important; }
+
   .field-group.col-2,
   .field-group.col-3,
   .field-group.col-4 { grid-template-columns: 1fr; }
+
   .invoice-header { flex-direction: column; gap: 12px; }
   .invoice-meta-block { text-align: left; }
-  .line-items-table { font-size: 12px; }
-  .col-type { width: 110px; }
+
+  /* Larger touch targets */
+  .btn { min-height: 44px; padding: 10px 16px; }
+  .btn-sm { min-height: 36px; }
+  .del-row-btn { min-height: 36px; min-width: 36px; font-size: 22px; }
+
+  /* Action bar stacks vertically */
+  .action-bar { flex-direction: column; }
+  .action-bar .btn { width: 100%; justify-content: center; }
+
+  /* Nav scrolls horizontally instead of wrapping */
+  .top-nav { overflow-x: auto; gap: 8px; padding: 0 12px; }
+  .top-nav .brand { white-space: nowrap; font-size: 15px; }
+
+  /* Page padding tighter on mobile */
+  .page-wrap { margin: 12px auto; }
+  .card { padding: 16px; }
+
+  /* ── Line items: collapse table into stacked cards ── */
+  .line-items-table thead { display: none; }
+  .line-items-table, .line-items-table tbody,
+  .line-items-table tr, .line-items-table td { display: block; width: 100%; }
+
+  .line-items-table tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 10px;
+    padding: 10px;
+    background: var(--white);
+    position: relative;
+  }
+
+  .line-items-table td {
+    border: none;
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .line-items-table td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    min-width: 90px;
+    flex-shrink: 0;
+  }
+  .line-items-table td.col-del {
+    position: absolute;
+    top: 8px; right: 8px;
+    width: auto;
+    padding: 0;
+  }
+  .line-items-table td.col-del::before { display: none; }
+  .line-items-table td.col-total { font-size: 15px; font-weight: 700; color: var(--brand); }
+
+  /* Totals table full width on mobile */
+  .totals-block { justify-content: stretch; }
+  .totals-table { width: 100%; }
+
+  /* History table scrolls horizontally */
+  .card { overflow-x: auto; }
+  .history-table { min-width: 520px; }
+
+  /* Modal full-screen on mobile */
+  .modal-backdrop { padding: 0; }
+  .modal-box { border-radius: 0; min-height: 100vh; padding: 20px 16px; }
 }

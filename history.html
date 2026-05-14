@@ -5,20 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TMT Invoicing — History</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    .stats-bar {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      padding: 14px 20px;
-      background: var(--brand-light);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-    .stats-bar span { color: var(--text); }
-  </style>
 </head>
 <body>
 
@@ -44,21 +30,23 @@
   </div>
 
   <!-- History table -->
-  <div class="card" style="padding:0;overflow:hidden">
-    <table class="history-table" id="history-table" style="display:none">
-      <thead>
-        <tr>
-          <th>Invoice #</th>
-          <th>Date</th>
-          <th>Client</th>
-          <th>Total</th>
-          <th>Due Date</th>
-          <th>Status</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="history-body"></tbody>
-    </table>
+  <div class="card" style="padding:0">
+    <div class="history-scroll">
+      <table class="history-table" id="history-table" style="display:none">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Total</th>
+            <th>Due Date</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+      </table>
+    </div>
 
     <div id="empty-state" class="empty-state" style="display:none">
       <p>No invoices yet.</p>
@@ -71,11 +59,15 @@
 <!-- Preview modal -->
 <div class="modal-backdrop" id="preview-modal">
   <div class="modal-box">
-    <button class="modal-close" id="btn-modal-close" title="Close">&times;</button>
-    <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn btn-accent" id="btn-modal-pdf">&#128196; Download PDF</button>
+    <div class="modal-header">
+      <div class="modal-actions">
+        <button class="btn btn-accent" id="btn-modal-pdf">&#128196; Download PDF</button>
+      </div>
+      <button class="modal-close" id="btn-modal-close" title="Close">&times;</button>
     </div>
-    <div id="modal-body"></div>
+    <div class="modal-body-scroll">
+      <div id="modal-body"></div>
+    </div>
   </div>
 </div>
 

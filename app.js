@@ -88,9 +88,9 @@ function buildRow(item = {}) {
         <option value="custom"   ${type==='custom'   ?'selected':''}>Custom</option>
       </select>
     </td>
-    <td class="col-desc" data-label="Description"><input type="text" data-role="desc" value="${escHtml(desc)}" placeholder="Description" oninput="recalcRow(this)"></td>
-    <td class="col-qty" data-label="Qty"><input type="number" data-role="qty" value="${qty}" min="0" step="any" oninput="recalcRow(this)"></td>
-    <td class="col-rate" data-label="Rate ($)"><input type="number" data-role="rate" value="${rate}" min="0" step="0.01" placeholder="0.00" oninput="recalcRow(this)"></td>
+    <td class="col-desc" data-label="Description"><input type="text" data-role="desc" value="${escHtml(desc)}" placeholder="Description" oninput="recalcRow(this)" autocomplete="off"></td>
+    <td class="col-qty" data-label="Qty"><input type="number" data-role="qty" value="${qty}" min="0" step="any" inputmode="decimal" oninput="recalcRow(this)"></td>
+    <td class="col-rate" data-label="Rate ($)"><input type="number" data-role="rate" value="${rate}" min="0" step="0.01" placeholder="0.00" inputmode="decimal" oninput="recalcRow(this)"></td>
     <td class="col-total" data-label="Amount" data-role="total">${fmtMoney(lineTotal)}</td>
     <td class="col-del"><button class="del-row-btn" title="Remove" onclick="removeRow(this)">×</button></td>
   `;

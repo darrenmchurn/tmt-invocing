@@ -133,8 +133,10 @@ textarea { resize: vertical; min-height: 72px; }
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 24px;
   margin-bottom: 24px;
 }
+.company-block { flex: 1; }
 .company-block .company-name {
   font-size: 26px;
   font-weight: 800;
@@ -146,13 +148,16 @@ textarea { resize: vertical; min-height: 72px; }
   color: var(--muted);
   margin-top: 4px;
 }
-.invoice-meta-block { text-align: right; }
-.invoice-meta-block .inv-number {
-  font-size: 20px;
+.invoice-meta-block { flex-shrink: 0; width: 220px; }
+.invoice-meta-block label { text-align: left; }
+.inv-number-input {
   font-weight: 700;
+  font-size: 16px !important;
+  text-align: right;
   color: var(--brand);
 }
-.invoice-meta-block .inv-dates { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.inv-dates { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.inv-dates .field-group.col-2 { gap: 8px; }
 
 /* ── Line items table ── */
 .line-items-table { width: 100%; border-collapse: collapse; }
@@ -342,8 +347,10 @@ textarea { resize: vertical; min-height: 72px; }
   .field-group.col-3,
   .field-group.col-4 { grid-template-columns: 1fr; }
 
-  .invoice-header { flex-direction: column; gap: 12px; }
-  .invoice-meta-block { text-align: left; }
+  .invoice-header { flex-direction: column; gap: 16px; }
+  .invoice-meta-block { width: 100%; }
+  .inv-number-input { text-align: left; }
+  .inv-dates .field-group.col-2 { grid-template-columns: 1fr 1fr; }
 
   /* Larger touch targets */
   .btn { min-height: 44px; padding: 10px 16px; }

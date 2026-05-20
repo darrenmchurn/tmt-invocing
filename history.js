@@ -34,14 +34,13 @@ function showAlert(msg, type = 'success') {
   setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
 
-// ── Compute status from line items ─────────────────────
+// ── Compute status from invoice-level paid amount ──────
 function computeStatus(inv) {
-  const items = inv.lineItems || [];
-  if (!items.length) return inv.status || 'unpaid';
-  const totalPaid = items.reduce((s, li) => s + (parseFloat(li.paid) || 0), 0);
-  if (totalPaid <= 0) return 'unpaid';
-  const allPaid = items.every(li => (parseFloat(li.paid) || 0) >= li.total);
-  return allPaid ? 'paid' : 'partial';
+  const paid  = parseFloat(inv.paidAmount) || 0;
+  const total = parseFloat(inv.total) || 0;
+  if (paid <= 0) return 'unpaid';
+  if (paid >= total) return 'paid';
+  return 'partial';
 }
 
 // ── Status badge HTML ──────────────────────────────────
@@ -96,6 +95,8 @@ function renderHistory() {
           onclick="togglePaid('${escHtml(inv.id)}', event)">
           ${status === 'paid' ? 'Mark Unpaid' : 'Mark Paid'}
         </button>
+        <button class="btn btn-sm btn-accent"
+          onclick="markPartial('${escHtml(inv.id)}', event)" style="margin-left:6px">Partial</button>
         <a class="btn btn-sm btn-ghost" href="index.html?edit=${encodeURIComponent(inv.id)}"
           style="margin-left:6px">Edit</a>
         <button class="btn btn-sm btn-danger"
@@ -111,7 +112,7 @@ function renderHistory() {
   });
 }
 
-// ── Mark Paid / Unpaid — fills every line item ─────────
+// ── Mark Paid / Unpaid ─────────────────────────────────
 function togglePaid(id, e) {
   e.stopPropagation();
   const list = getInvoices();
@@ -122,14 +123,10 @@ function togglePaid(id, e) {
   const status = computeStatus(inv);
 
   if (status !== 'paid') {
-    // Mark fully paid — fill each line item's paid with its total
-    inv.lineItems = (inv.lineItems || []).map(li => ({ ...li, paid: li.total }));
     inv.paidAmount = inv.total;
     inv.balanceDue = 0;
     inv.status     = 'paid';
   } else {
-    // Mark unpaid — clear all paid amounts
-    inv.lineItems = (inv.lineItems || []).map(li => ({ ...li, paid: 0 }));
     inv.paidAmount = 0;
     inv.balanceDue = inv.total;
     inv.status     = 'unpaid';
@@ -141,6 +138,34 @@ function togglePaid(id, e) {
   renderStats();
 }
 window.togglePaid = togglePaid;
+
+// ── Mark Partially Paid ────────────────────────────────
+function markPartial(id, e) {
+  e.stopPropagation();
+  const list = getInvoices();
+  const idx  = list.findIndex(i => i.id === id);
+  if (idx < 0) return;
+
+  const inv    = list[idx];
+  const current = parseFloat(inv.paidAmount) || 0;
+  const amtStr  = prompt(
+    `Invoice ${id}  —  Total: ${fmtMoney(inv.total)}\nCurrently paid: ${fmtMoney(current)}\n\nEnter amount paid:`
+  );
+  if (amtStr === null) return; // cancelled
+
+  const amt = parseFloat(amtStr);
+  if (isNaN(amt) || amt < 0) { showAlert('Invalid amount entered.', 'error'); return; }
+
+  inv.paidAmount = amt;
+  inv.balanceDue = inv.total - amt;
+  inv.status     = amt >= inv.total ? 'paid' : (amt <= 0 ? 'unpaid' : 'partial');
+
+  list[idx] = inv;
+  saveInvoices(list);
+  renderHistory();
+  renderStats();
+}
+window.markPartial = markPartial;
 
 // ── Delete ──────────────────────────────────────────────
 function deleteInvoice(id, e) {
@@ -178,7 +203,6 @@ function renderInvoiceHTML(inv) {
       <td style="text-align:right">${it.qty}</td>
       <td style="text-align:right">${fmtMoney(it.rate)}</td>
       <td style="text-align:right">${fmtMoney(it.total)}</td>
-      <td style="text-align:right">${fmtMoney(parseFloat(it.paid)||0)}</td>
     </tr>`).join('');
 
   const paid    = parseFloat(inv.paidAmount) || 0;
@@ -226,7 +250,6 @@ function renderInvoiceHTML(inv) {
             <th style="text-align:right">Qty</th>
             <th style="text-align:right">Rate</th>
             <th style="text-align:right">Amount</th>
-            <th style="text-align:right">Paid</th>
           </tr>
         </thead>
         <tbody>${itemRows}</tbody>

@@ -76,14 +76,12 @@ function escHtml(s) {
 let rowCount = 0;
 
 function buildRow(item = {}) {
-  rowCount++;
   const codes     = getBillingCodes();
   const savedCode = item.billingCodeId || '';
   const desc      = item.description   || '';
   const qty       = item.qty           ?? 1;
   const rate      = item.rate          ?? 0;
   const lineTotal = item.total         ?? 0;
-  const paid      = item.paid          ?? 0;
 
   const blankSel  = !savedCode ? 'selected' : '';
   const options   = codes.map(c =>
@@ -108,9 +106,6 @@ function buildRow(item = {}) {
       <input type="number" data-role="rate" value="${rate}" min="0" step="0.01" placeholder="0.00" inputmode="decimal" oninput="recalcRow(this)">
     </td>
     <td class="col-total" data-label="Amount" data-role="total">${fmtMoney(lineTotal)}</td>
-    <td class="col-paid" data-label="Paid ($)">
-      <input type="number" data-role="paid" value="${paid || ''}" min="0" step="0.01" placeholder="0.00" inputmode="decimal" oninput="recalcTotals()">
-    </td>
     <td class="col-del"><button class="del-row-btn" title="Remove" onclick="removeRow(this)">×</button></td>
   `;
   return tr;
@@ -148,26 +143,23 @@ window.removeRow           = removeRow;
 // ── Totals ─────────────────────────────────────────────
 function recalcTotals() {
   const rows = document.querySelectorAll('#line-items-body tr');
-  let subtotal  = 0;
-  let paidTotal = 0;
+  let subtotal = 0;
 
   rows.forEach(row => {
     const qty  = parseFloat(row.querySelector('[data-role="qty"]')?.value)  || 0;
     const rate = parseFloat(row.querySelector('[data-role="rate"]')?.value) || 0;
-    const paid = parseFloat(row.querySelector('[data-role="paid"]')?.value) || 0;
-    subtotal  += qty * rate;
-    paidTotal += paid;
+    subtotal += qty * rate;
   });
 
   const taxRate = parseFloat(document.getElementById('tax-rate')?.value) || 0;
   const taxAmt  = subtotal * taxRate / 100;
   const total   = subtotal + taxAmt;
-  const balance = total - paidTotal;
+  const paidAmt = parseFloat(document.getElementById('paid-amount')?.value) || 0;
+  const balance = total - paidAmt;
 
   document.getElementById('subtotal-display').textContent = fmtMoney(subtotal);
   document.getElementById('tax-amt-display').textContent  = fmtMoney(taxAmt);
   document.getElementById('total-display').textContent    = fmtMoney(total);
-  document.getElementById('paid-display').textContent     = fmtMoney(paidTotal);
   document.getElementById('balance-display').textContent  = fmtMoney(balance);
 }
 
@@ -194,11 +186,10 @@ function collectInvoice() {
   const lineItems = rows.map(row => {
     const qty  = parseFloat(row.querySelector('[data-role="qty"]').value)  || 0;
     const rate = parseFloat(row.querySelector('[data-role="rate"]').value) || 0;
-    const paid = parseFloat(row.querySelector('[data-role="paid"]').value) || 0;
     return {
       billingCodeId: row.querySelector('[data-role="type"]').value,
       description:   row.querySelector('[data-role="desc"]').value,
-      qty, rate, paid,
+      qty, rate,
       total: qty * rate,
     };
   });
@@ -207,7 +198,7 @@ function collectInvoice() {
   const subtotal = lineItems.reduce((s, i) => s + i.total, 0);
   const taxAmt   = subtotal * taxRate / 100;
   const total    = subtotal + taxAmt;
-  const paid     = lineItems.reduce((s, i) => s + i.paid, 0);
+  const paidAmt  = parseFloat(document.getElementById('paid-amount').value) || 0;
 
   return {
     id:          document.getElementById('inv-number').value.trim(),
@@ -226,22 +217,20 @@ function collectInvoice() {
     taxRate,
     taxAmount:  taxAmt,
     total,
-    paidAmount: paid,
-    balanceDue: total - paid,
+    paidAmount: paidAmt,
+    balanceDue: total - paidAmt,
     paymentLink: document.getElementById('payment-link-input').value.trim(),
     notes:       document.getElementById('notes').value.trim(),
-    status:      computeStatus(lineItems, total, paid),
+    status:      computeStatus(total, paidAmt),
     createdAt:   document.getElementById('inv-created-at').value || new Date().toISOString(),
   };
 }
 
-// ── Compute status from line items ─────────────────────
-function computeStatus(lineItems, total, paid) {
-  if (!lineItems || lineItems.length === 0) return 'unpaid';
+// ── Compute invoice status ─────────────────────────────
+function computeStatus(total, paid) {
   if (paid <= 0) return 'unpaid';
-  // Partial if any line item has paid < its total
-  const allPaid = lineItems.every(li => (parseFloat(li.paid) || 0) >= li.total);
-  return allPaid ? 'paid' : 'partial';
+  if (paid >= total) return 'paid';
+  return 'partial';
 }
 
 // ── Save invoice ────────────────────────────────────────
@@ -291,6 +280,8 @@ function loadInvoiceForEdit(inv) {
   document.getElementById('payment-link-input').value = inv.paymentLink || '';
   document.getElementById('tax-rate').value       = inv.taxRate         ?? TMT_CONFIG.defaultTaxRate;
 
+  document.getElementById('paid-amount').value = inv.paidAmount || 0;
+
   document.getElementById('line-items-body').innerHTML = '';
   rowCount = 0;
   (inv.lineItems || []).forEach(li => addRow(li));
@@ -312,17 +303,13 @@ function renderPreview(inv) {
   const cfg          = TMT_CONFIG;
   const companyLines = [cfg.phone, cfg.email, cfg.address].filter(Boolean).join(' · ');
 
-  const itemRows = inv.lineItems.map(it => {
-    const itemPaid = parseFloat(it.paid) || 0;
-    return `
+  const itemRows = inv.lineItems.map(it => `
     <tr>
       <td>${escHtml(it.description)}</td>
       <td style="text-align:right">${it.qty}</td>
       <td style="text-align:right">${fmtMoney(it.rate)}</td>
       <td style="text-align:right">${fmtMoney(it.total)}</td>
-      <td style="text-align:right">${fmtMoney(itemPaid)}</td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
 
   const paid    = parseFloat(inv.paidAmount) || 0;
   const balance = parseFloat(inv.balanceDue) ?? (inv.total - paid);
@@ -368,7 +355,6 @@ function renderPreview(inv) {
           <th style="text-align:right">Qty</th>
           <th style="text-align:right">Rate</th>
           <th style="text-align:right">Amount</th>
-          <th style="text-align:right">Paid</th>
         </tr>
       </thead>
       <tbody>${itemRows}</tbody>
@@ -435,7 +421,8 @@ function newInvoice() {
     document.getElementById(id).value = '';
   });
   document.getElementById('payment-link-input').value = TMT_CONFIG.paymentLink;
-  document.getElementById('tax-rate').value           = TMT_CONFIG.defaultTaxRate;
+  document.getElementById('tax-rate').value            = TMT_CONFIG.defaultTaxRate;
+  document.getElementById('paid-amount').value         = 0;
 
   document.getElementById('line-items-body').innerHTML = '';
   rowCount = 0;
@@ -452,6 +439,7 @@ function newInvoice() {
 // ── Init ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('tax-rate')?.addEventListener('input', recalcTotals);
+  document.getElementById('paid-amount')?.addEventListener('input', recalcTotals);
   document.getElementById('inv-date')?.addEventListener('change', updateDueDate);
   document.getElementById('inv-terms')?.addEventListener('change', updateDueDate);
   document.getElementById('inv-due')?.addEventListener('input', function() {

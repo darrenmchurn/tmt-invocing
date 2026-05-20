@@ -190,7 +190,6 @@ textarea { resize: vertical; min-height: 72px; }
 .col-qty   { width: 60px; }
 .col-rate  { width: 85px; }
 .col-total { width: 85px; font-weight: 600; }
-.col-paid  { width: 85px; }
 .col-del   { width: 36px; text-align: center; }
 .del-row-btn {
   background: none; border: none; color: var(--danger);
@@ -227,6 +226,7 @@ textarea { resize: vertical; min-height: 72px; }
 .tax-rate-field { display: flex; align-items: center; gap: 6px; }
 .tax-rate-field input { width: 60px; flex-shrink: 0; }
 .tax-rate-field span { color: var(--muted); font-size: 13px; }
+#paid-amount { text-align: right; font-weight: 600; }
 
 /* ── Payment link ── */
 .payment-link-block {

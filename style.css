@@ -348,38 +348,203 @@ textarea { resize: vertical; min-height: 72px; }
 
 /* ── Invoice preview (used inside modal & PDF) ── */
 #invoice-preview {
-  padding: 32px;
+  padding: 0;
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  overflow: hidden;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #1c2b3a;
 }
-.preview-section-title {
+
+/* Header band */
+.inv-header-band {
+  background: var(--brand);
+  color: #fff;
+  padding: 28px 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+.inv-company-name {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.inv-company-contact {
+  font-size: 12px;
+  opacity: 0.70;
+  margin-top: 6px;
+  line-height: 1.6;
+}
+.inv-header-right { text-align: right; flex-shrink: 0; }
+.inv-word-invoice {
   font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--muted);
-  margin: 20px 0 8px;
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
+  color: var(--accent);
+  margin-bottom: 4px;
 }
-.preview-client { font-size: 15px; }
-.preview-client .client-name { font-weight: 700; font-size: 17px; }
-.preview-items-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-.preview-items-table th {
-  background: var(--brand); color: var(--white);
-  padding: 7px 10px; font-size: 13px; text-align: left;
+.inv-number-display {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
 }
-.preview-items-table td { padding: 7px 10px; border-bottom: 1px solid #eee; font-size: 14px; }
-.preview-items-table td.right { text-align: right; }
-.preview-totals { display: flex; justify-content: flex-end; margin-top: 12px; }
-.preview-totals table { width: 260px; }
-.preview-totals td { padding: 4px 8px; font-size: 14px; }
-.preview-totals td:last-child { text-align: right; font-weight: 600; }
-.preview-totals tr.grand td { font-size: 17px; font-weight: 800; color: var(--brand); border-top: 2px solid var(--border); padding-top: 8px; }
-.preview-notes { margin-top: 20px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; }
-.preview-payment { margin-top: 16px; padding: 12px 16px; background: var(--brand-light); border-radius: var(--radius); font-size: 14px; word-break: break-all; }
-.preview-payment a { color: var(--brand); font-weight: 600; }
+.inv-version-display {
+  font-size: 11px;
+  opacity: 0.55;
+  margin-top: 4px;
+}
+
+/* Info strip: Bill To (left) + Invoice Details (right) */
+.inv-info-strip {
+  display: flex;
+  border-bottom: 2px solid #eaeff4;
+}
+.inv-bill-to {
+  flex: 1;
+  padding: 20px 36px;
+  border-right: 1px solid #eaeff4;
+}
+.inv-details-block {
+  padding: 20px 36px;
+  min-width: 210px;
+}
+.inv-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a9ab0;
+  margin-bottom: 8px;
+}
+.inv-client-name-lg {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--brand);
+  margin-bottom: 4px;
+}
+.inv-client-sub {
+  font-size: 13px;
+  color: #4a5a6a;
+  line-height: 1.6;
+}
+.inv-details-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.inv-details-table td { padding: 3px 0; vertical-align: top; }
+.inv-details-table td:first-child {
+  color: #8a9ab0;
+  font-weight: 600;
+  padding-right: 14px;
+  white-space: nowrap;
+}
+.inv-details-table td:last-child { font-weight: 600; color: #1c2b3a; }
+
+/* Services */
+.inv-services-wrap { padding: 24px 36px 0; }
+.inv-services-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.inv-services-table th {
+  background: #f0f4f8;
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--brand);
+}
+.inv-services-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f4f8;
+  color: #1c2b3a;
+}
+.inv-services-table tbody tr:last-child td { border-bottom: none; }
+.inv-services-table tbody tr:nth-child(even) td { background: #fafbfd; }
+
+/* Totals */
+.inv-totals-wrap {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 36px 24px;
+}
+.inv-totals-table {
+  width: 270px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.inv-totals-table td { padding: 5px 10px; }
+.inv-totals-table td:first-child { color: #6c7a89; }
+.inv-totals-table td:last-child { text-align: right; font-weight: 600; }
+.inv-totals-table tr.inv-tr-divider td {
+  border-top: 1px solid #eaeff4;
+  padding-top: 10px;
+}
+.inv-totals-table tr.inv-tr-grand td {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--brand);
+  background: #eaf0f8;
+  padding: 9px 10px;
+}
+.inv-totals-table tr.inv-tr-grand td:first-child { border-radius: 4px 0 0 4px; }
+.inv-totals-table tr.inv-tr-grand td:last-child  { border-radius: 0 4px 4px 0; }
+.inv-totals-table tr.inv-tr-balance td {
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--brand);
+  padding: 10px 10px;
+}
+.inv-totals-table tr.inv-tr-balance td:first-child { border-radius: 4px 0 0 4px; }
+.inv-totals-table tr.inv-tr-balance td:last-child  { border-radius: 0 4px 4px 0; }
+
+/* Footer section (notes + payment + thank-you) */
+.inv-footer-section {
+  margin: 0 36px;
+  padding-bottom: 20px;
+}
+.inv-payment-box {
+  background: #f0f4f8;
+  border-left: 3px solid var(--accent);
+  border-radius: 3px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  word-break: break-all;
+}
+.inv-payment-box a { color: var(--brand); font-weight: 600; }
+.inv-notes-box {
+  font-size: 13px;
+  color: #6c7a89;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #fafbfc;
+  border-radius: 3px;
+  border-left: 3px solid #d0d7de;
+}
+.inv-thankyou {
+  margin: 4px 36px 28px;
+  padding-top: 16px;
+  border-top: 2px solid var(--accent);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a9ab0;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
 
 /* ── Alerts ── */
 .alert {

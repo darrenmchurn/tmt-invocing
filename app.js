@@ -298,79 +298,96 @@ function updateVersionBadge(v) {
   badge.style.display = 'inline-block';
 }
 
-// ── Invoice preview renderer ───────────────────────────
+// ── Invoice preview renderer (PDF + modal) ────────────
 function renderPreview(inv) {
-  const cfg          = TMT_CONFIG;
-  const companyLines = [cfg.phone, cfg.email, cfg.address].filter(Boolean).join(' · ');
-
-  const itemRows = inv.lineItems.map(it => `
-    <tr>
-      <td>${escHtml(it.description)}</td>
-      <td style="text-align:right">${it.qty}</td>
-      <td style="text-align:right">${fmtMoney(it.rate)}</td>
-      <td style="text-align:right">${fmtMoney(it.total)}</td>
-    </tr>`).join('');
-
+  const cfg     = TMT_CONFIG;
+  const contact = [cfg.phone, cfg.email, cfg.address].filter(Boolean).join('  ·  ');
   const paid    = parseFloat(inv.paidAmount) || 0;
   const balance = parseFloat(inv.balanceDue) ?? (inv.total - paid);
 
+  const clientSub = [
+    inv.client?.address ? escHtml(inv.client.address).replace(/\n/g, '<br>') : '',
+    inv.client?.email   ? escHtml(inv.client.email)  : '',
+    inv.client?.phone   ? escHtml(inv.client.phone)  : '',
+  ].filter(Boolean).join('<br>');
+
+  const itemRows = (inv.lineItems || []).map(it => `
+    <tr>
+      <td>${escHtml(it.description)}</td>
+      <td style="text-align:center;width:48px">${it.qty}</td>
+      <td style="text-align:right;width:88px">${fmtMoney(it.rate)}</td>
+      <td style="text-align:right;width:96px;font-weight:600">${fmtMoney(it.total)}</td>
+    </tr>`).join('');
+
   const paymentBlock = inv.paymentLink
-    ? `<div class="preview-payment"><strong>Payment:</strong>
-         <a href="${escHtml(inv.paymentLink)}" target="_blank">${escHtml(inv.paymentLink)}</a></div>`
+    ? `<div class="inv-payment-box">
+         <strong>Pay Online:</strong>
+         <a href="${escHtml(inv.paymentLink)}" target="_blank">${escHtml(inv.paymentLink)}</a>
+       </div>`
     : '';
 
   const notesBlock = inv.notes
-    ? `<div class="preview-notes"><strong>Notes:</strong> ${escHtml(inv.notes)}</div>`
+    ? `<div class="inv-notes-box"><strong>Notes:</strong> ${escHtml(inv.notes)}</div>`
     : '';
 
-  const clientBlock = [
-    inv.client?.name    ? `<div class="client-name">${escHtml(inv.client.name)}</div>`             : '',
-    inv.client?.address ? `<div>${escHtml(inv.client.address).replace(/\n/g,'<br>')}</div>`        : '',
-    inv.client?.email   ? `<div>${escHtml(inv.client.email)}</div>`                                : '',
-    inv.client?.phone   ? `<div>${escHtml(inv.client.phone)}</div>`                                : '',
-  ].join('');
+  const hasFooter = inv.paymentLink || inv.notes;
 
   return `
-    <div class="invoice-header">
-      <div class="company-block">
-        <div class="company-name">${escHtml(cfg.companyName)}</div>
-        ${companyLines ? `<div class="company-sub">${escHtml(companyLines)}</div>` : ''}
+    <div class="inv-header-band">
+      <div>
+        <div class="inv-company-name">${escHtml(cfg.companyName)}</div>
+        ${contact ? `<div class="inv-company-contact">${escHtml(contact)}</div>` : ''}
       </div>
-      <div class="invoice-meta-block">
-        <div class="inv-number">Invoice ${escHtml(inv.id)} <span style="font-size:12px;color:#888">v${inv.version||1}</span></div>
-        <div class="inv-dates">
-          Date: ${inv.date}<br>Terms: ${escHtml(inv.terms||'')}<br>Due: ${inv.dueDate||''}
-        </div>
+      <div class="inv-header-right">
+        <div class="inv-word-invoice">Invoice</div>
+        <div class="inv-number-display">${escHtml(inv.id)}</div>
+        <div class="inv-version-display">Version ${inv.version || 1}</div>
       </div>
     </div>
 
-    <div class="preview-section-title">Bill To</div>
-    <div class="preview-client">${clientBlock}</div>
+    <div class="inv-info-strip">
+      <div class="inv-bill-to">
+        <div class="inv-section-label">Bill To</div>
+        <div class="inv-client-name-lg">${escHtml(inv.client?.name || '—')}</div>
+        ${clientSub ? `<div class="inv-client-sub">${clientSub}</div>` : ''}
+      </div>
+      <div class="inv-details-block">
+        <div class="inv-section-label">Invoice Details</div>
+        <table class="inv-details-table">
+          <tr><td>Date</td><td>${inv.date || ''}</td></tr>
+          <tr><td>Due Date</td><td>${inv.dueDate || ''}</td></tr>
+          <tr><td>Terms</td><td>${escHtml(inv.terms || '')}</td></tr>
+        </table>
+      </div>
+    </div>
 
-    <div class="preview-section-title">Services</div>
-    <table class="preview-items-table">
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th style="text-align:right">Qty</th>
-          <th style="text-align:right">Rate</th>
-          <th style="text-align:right">Amount</th>
-        </tr>
-      </thead>
-      <tbody>${itemRows}</tbody>
-    </table>
-
-    <div class="preview-totals">
-      <table>
-        <tr><td>Subtotal</td><td>${fmtMoney(inv.subtotal)}</td></tr>
-        <tr><td>Tax (${inv.taxRate}%)</td><td>${fmtMoney(inv.taxAmount)}</td></tr>
-        <tr class="grand"><td>Total</td><td>${fmtMoney(inv.total)}</td></tr>
-        <tr><td>Amount Paid</td><td>${fmtMoney(paid)}</td></tr>
-        <tr class="grand"><td>Balance Due</td><td>${fmtMoney(balance)}</td></tr>
+    <div class="inv-services-wrap">
+      <div class="inv-section-label">Services</div>
+      <table class="inv-services-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th style="text-align:center;width:48px">Qty</th>
+            <th style="text-align:right;width:88px">Rate</th>
+            <th style="text-align:right;width:96px">Amount</th>
+          </tr>
+        </thead>
+        <tbody>${itemRows}</tbody>
       </table>
     </div>
-    ${paymentBlock}
-    ${notesBlock}
+
+    <div class="inv-totals-wrap">
+      <table class="inv-totals-table">
+        <tr><td>Subtotal</td><td>${fmtMoney(inv.subtotal)}</td></tr>
+        <tr><td>Tax (${inv.taxRate}%)</td><td>${fmtMoney(inv.taxAmount)}</td></tr>
+        <tr class="inv-tr-divider inv-tr-grand"><td>Total</td><td>${fmtMoney(inv.total)}</td></tr>
+        <tr><td style="padding-top:8px">Amount Paid</td><td style="padding-top:8px">${fmtMoney(paid)}</td></tr>
+        <tr class="inv-tr-balance"><td>Balance Due</td><td>${fmtMoney(balance)}</td></tr>
+      </table>
+    </div>
+
+    ${hasFooter ? `<div class="inv-footer-section">${paymentBlock}${notesBlock}</div>` : ''}
+    <div class="inv-thankyou">Thank you for your business!</div>
   `;
 }
 

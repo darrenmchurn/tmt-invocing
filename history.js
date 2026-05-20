@@ -1,7 +1,5 @@
 /* =====================================================
    TMT Invoicing — history.js
-   Invoice history list, status toggle, preview, delete,
-   and CSV/Excel export via SheetJS
    ===================================================== */
 
 const LS_INVOICES = 'tmt_invoices';
@@ -15,7 +13,6 @@ const TMT_CONFIG = {
   paymentLabel: 'Pay Online',
 };
 
-// ── Helpers ────────────────────────────────────────────
 function getInvoices() {
   return JSON.parse(localStorage.getItem(LS_INVOICES) || '[]');
 }
@@ -37,6 +34,26 @@ function showAlert(msg, type = 'success') {
   setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
 
+// ── Compute status from line items ─────────────────────
+function computeStatus(inv) {
+  const items = inv.lineItems || [];
+  if (!items.length) return inv.status || 'unpaid';
+  const totalPaid = items.reduce((s, li) => s + (parseFloat(li.paid) || 0), 0);
+  if (totalPaid <= 0) return 'unpaid';
+  const allPaid = items.every(li => (parseFloat(li.paid) || 0) >= li.total);
+  return allPaid ? 'paid' : 'partial';
+}
+
+// ── Status badge HTML ──────────────────────────────────
+function statusBadge(status) {
+  const map = {
+    paid:    '<span class="badge badge-paid">Paid</span>',
+    partial: '<span class="badge badge-partial">Partial</span>',
+    unpaid:  '<span class="badge badge-unpaid">Unpaid</span>',
+  };
+  return map[status] || map.unpaid;
+}
+
 // ── Render history table ────────────────────────────────
 function renderHistory() {
   const invoices = getInvoices().slice().reverse();
@@ -45,7 +62,7 @@ function renderHistory() {
 
   tbody.innerHTML = '';
 
-  if (invoices.length === 0) {
+  if (!invoices.length) {
     empty.style.display = 'block';
     document.getElementById('history-table').style.display = 'none';
     document.getElementById('btn-export-xlsx').style.display = 'none';
@@ -57,30 +74,36 @@ function renderHistory() {
   document.getElementById('btn-export-xlsx').style.display = '';
 
   invoices.forEach(inv => {
+    const status  = computeStatus(inv);
     const paid    = parseFloat(inv.paidAmount) || 0;
-    const balance = inv.total - paid;
+    const balance = parseFloat(inv.balanceDue) ?? (inv.total - paid);
+    const ver     = inv.version || 1;
+
     const tr = document.createElement('tr');
-    if (inv.status === 'paid') tr.classList.add('paid');
+    if (status === 'paid') tr.classList.add('paid');
+
     tr.innerHTML = `
-      <td>${escHtml(inv.id)}</td>
+      <td>${escHtml(inv.id)} <span class="version-badge">v${ver}</span></td>
       <td>${inv.date || ''}</td>
       <td>${escHtml(inv.client?.name || '—')}</td>
       <td>${fmtMoney(inv.total)}</td>
       <td>${fmtMoney(paid)}</td>
       <td>${fmtMoney(balance)}</td>
       <td>${inv.dueDate || ''}</td>
-      <td class="no-click">
-        <button class="btn btn-sm ${inv.status === 'paid' ? 'btn-ghost' : 'btn-success'}"
-          onclick="toggleStatus('${escHtml(inv.id)}', event)">
-          ${inv.status === 'paid' ? 'Mark Unpaid' : 'Mark Paid'}
+      <td>${statusBadge(status)}</td>
+      <td class="no-click" style="white-space:nowrap">
+        <button class="btn btn-sm ${status === 'paid' ? 'btn-ghost' : 'btn-success'}"
+          onclick="togglePaid('${escHtml(inv.id)}', event)">
+          ${status === 'paid' ? 'Mark Unpaid' : 'Mark Paid'}
         </button>
-      </td>
-      <td class="no-click">
+        <a class="btn btn-sm btn-ghost" href="index.html?edit=${encodeURIComponent(inv.id)}"
+          style="margin-left:6px">Edit</a>
         <button class="btn btn-sm btn-danger"
-          onclick="deleteInvoice('${escHtml(inv.id)}', event)">Delete</button>
+          onclick="deleteInvoice('${escHtml(inv.id)}', event)" style="margin-left:6px">Delete</button>
       </td>
     `;
-    // Click first 7 cells to open preview
+
+    // Click data cells to open preview
     [...tr.querySelectorAll('td:not(.no-click)')].forEach(td =>
       td.addEventListener('click', () => previewInvoice(inv.id))
     );
@@ -88,18 +111,36 @@ function renderHistory() {
   });
 }
 
-// ── Toggle paid/unpaid ──────────────────────────────────
-function toggleStatus(id, e) {
+// ── Mark Paid / Unpaid — fills every line item ─────────
+function togglePaid(id, e) {
   e.stopPropagation();
   const list = getInvoices();
   const idx  = list.findIndex(i => i.id === id);
   if (idx < 0) return;
-  list[idx].status = list[idx].status === 'paid' ? 'unpaid' : 'paid';
+
+  const inv    = list[idx];
+  const status = computeStatus(inv);
+
+  if (status !== 'paid') {
+    // Mark fully paid — fill each line item's paid with its total
+    inv.lineItems = (inv.lineItems || []).map(li => ({ ...li, paid: li.total }));
+    inv.paidAmount = inv.total;
+    inv.balanceDue = 0;
+    inv.status     = 'paid';
+  } else {
+    // Mark unpaid — clear all paid amounts
+    inv.lineItems = (inv.lineItems || []).map(li => ({ ...li, paid: 0 }));
+    inv.paidAmount = 0;
+    inv.balanceDue = inv.total;
+    inv.status     = 'unpaid';
+  }
+
+  list[idx] = inv;
   saveInvoices(list);
   renderHistory();
   renderStats();
 }
-window.toggleStatus = toggleStatus;
+window.togglePaid = togglePaid;
 
 // ── Delete ──────────────────────────────────────────────
 function deleteInvoice(id, e) {
@@ -126,7 +167,7 @@ function closeModal() {
 }
 window.closeModal = closeModal;
 
-// ── Invoice HTML renderer ───────────────────────────────
+// ── Invoice HTML renderer (modal + PDF) ────────────────
 function renderInvoiceHTML(inv) {
   const cfg          = TMT_CONFIG;
   const companyLines = [cfg.phone, cfg.email, cfg.address].filter(Boolean).join(' · ');
@@ -137,16 +178,15 @@ function renderInvoiceHTML(inv) {
       <td style="text-align:right">${it.qty}</td>
       <td style="text-align:right">${fmtMoney(it.rate)}</td>
       <td style="text-align:right">${fmtMoney(it.total)}</td>
+      <td style="text-align:right">${fmtMoney(parseFloat(it.paid)||0)}</td>
     </tr>`).join('');
 
-  const paid       = parseFloat(inv.paidAmount) || 0;
-  const balance    = parseFloat(inv.balanceDue) ?? (inv.total - paid);
+  const paid    = parseFloat(inv.paidAmount) || 0;
+  const balance = parseFloat(inv.balanceDue) ?? (inv.total - paid);
 
   const paymentBlock = inv.paymentLink
-    ? `<div class="preview-payment">
-         <strong>Payment:</strong>
-         <a href="${escHtml(inv.paymentLink)}" target="_blank">${escHtml(inv.paymentLink)}</a>
-       </div>`
+    ? `<div class="preview-payment"><strong>Payment:</strong>
+         <a href="${escHtml(inv.paymentLink)}" target="_blank">${escHtml(inv.paymentLink)}</a></div>`
     : '';
 
   const notesBlock = inv.notes
@@ -154,10 +194,10 @@ function renderInvoiceHTML(inv) {
     : '';
 
   const clientBlock = [
-    inv.client?.name    ? `<div class="client-name">${escHtml(inv.client.name)}</div>` : '',
-    inv.client?.address ? `<div>${escHtml(inv.client.address).replace(/\n/g,'<br>')}</div>` : '',
-    inv.client?.email   ? `<div>${escHtml(inv.client.email)}</div>` : '',
-    inv.client?.phone   ? `<div>${escHtml(inv.client.phone)}</div>` : '',
+    inv.client?.name    ? `<div class="client-name">${escHtml(inv.client.name)}</div>`        : '',
+    inv.client?.address ? `<div>${escHtml(inv.client.address).replace(/\n/g,'<br>')}</div>`   : '',
+    inv.client?.email   ? `<div>${escHtml(inv.client.email)}</div>`                           : '',
+    inv.client?.phone   ? `<div>${escHtml(inv.client.phone)}</div>`                           : '',
   ].join('');
 
   return `
@@ -168,11 +208,9 @@ function renderInvoiceHTML(inv) {
           ${companyLines ? `<div class="company-sub">${escHtml(companyLines)}</div>` : ''}
         </div>
         <div class="invoice-meta-block">
-          <div class="inv-number">Invoice ${escHtml(inv.id)}</div>
+          <div class="inv-number">Invoice ${escHtml(inv.id)} <span style="font-size:12px;color:#888">v${inv.version||1}</span></div>
           <div class="inv-dates">
-            Date: ${inv.date}<br>
-            Terms: ${escHtml(inv.terms || '')}<br>
-            Due: ${inv.dueDate || ''}
+            Date: ${inv.date}<br>Terms: ${escHtml(inv.terms||'')}<br>Due: ${inv.dueDate||''}
           </div>
         </div>
       </div>
@@ -188,6 +226,7 @@ function renderInvoiceHTML(inv) {
             <th style="text-align:right">Qty</th>
             <th style="text-align:right">Rate</th>
             <th style="text-align:right">Amount</th>
+            <th style="text-align:right">Paid</th>
           </tr>
         </thead>
         <tbody>${itemRows}</tbody>
@@ -208,10 +247,10 @@ function renderInvoiceHTML(inv) {
   `;
 }
 
-// ── PDF export from preview modal ──────────────────────
+// ── PDF from modal ──────────────────────────────────────
 async function exportModalPDF() {
   const previewEl = document.getElementById('invoice-preview');
-  if (!previewEl) { showAlert('Open an invoice preview first.', 'error'); return; }
+  if (!previewEl) { showAlert('Open an invoice first.', 'error'); return; }
   try {
     const canvas  = await html2canvas(previewEl, { scale: 2, useCORS: true });
     const imgData = canvas.toDataURL('image/png');
@@ -225,7 +264,7 @@ async function exportModalPDF() {
       if (i > 0) pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, -i * pageH, pageW, imgH);
     }
-    const invId = previewEl.querySelector('.inv-number')?.textContent?.replace('Invoice ','').trim() || 'export';
+    const invId = previewEl.querySelector('.inv-number')?.textContent?.split(' ')[1]?.trim() || 'export';
     pdf.save(`TMT-Invoice-${invId}.pdf`);
   } catch (err) {
     showAlert('PDF export failed.', 'error');
@@ -234,35 +273,36 @@ async function exportModalPDF() {
 }
 window.exportModalPDF = exportModalPDF;
 
-// ── Excel export (SheetJS) ──────────────────────────────
+// ── Excel export ────────────────────────────────────────
 function exportXLSX() {
   const invoices = getInvoices();
   if (!invoices.length) { showAlert('No invoices to export.', 'error'); return; }
 
   const rows = [[
-    'Invoice #','Date','Due Date','Terms',
+    'Invoice #','Version','Date','Due Date','Terms',
     'Client Name','Client Address','Client Email','Client Phone',
     'Subtotal','Tax Rate %','Tax Amount','Total','Amount Paid','Balance Due',
     'Status','Notes'
   ]];
 
   invoices.forEach(inv => {
+    const status  = computeStatus(inv);
     const paid    = parseFloat(inv.paidAmount) || 0;
     const balance = parseFloat(inv.balanceDue) ?? (inv.total - paid);
     rows.push([
-      inv.id, inv.date, inv.dueDate, inv.terms,
-      inv.client?.name || '', inv.client?.address || '',
-      inv.client?.email || '', inv.client?.phone || '',
+      inv.id, inv.version || 1, inv.date, inv.dueDate, inv.terms,
+      inv.client?.name||'', inv.client?.address||'',
+      inv.client?.email||'', inv.client?.phone||'',
       inv.subtotal, inv.taxRate, inv.taxAmount, inv.total,
-      paid, balance,
-      inv.status, inv.notes,
+      paid, balance, status, inv.notes,
     ]);
   });
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [
-    {wch:12},{wch:12},{wch:12},{wch:16},{wch:24},{wch:30},{wch:28},{wch:16},
+    {wch:12},{wch:8},{wch:12},{wch:12},{wch:16},
+    {wch:24},{wch:30},{wch:28},{wch:16},
     {wch:12},{wch:10},{wch:12},{wch:12},{wch:12},{wch:12},{wch:10},{wch:30},
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Invoices');
@@ -271,12 +311,13 @@ function exportXLSX() {
 }
 window.exportXLSX = exportXLSX;
 
-// ── Summary stats ───────────────────────────────────────
+// ── Stats ───────────────────────────────────────────────
 function renderStats() {
-  const invoices  = getInvoices();
-  const total     = invoices.reduce((s, i) => s + (i.total || 0), 0);
-  const paid      = invoices.reduce((s, i) => s + (parseFloat(i.paidAmount) || 0), 0);
-  const balance   = invoices.reduce((s, i) => s + (parseFloat(i.balanceDue) ?? ((i.total || 0) - (parseFloat(i.paidAmount) || 0))), 0);
+  const invoices = getInvoices();
+  const total    = invoices.reduce((s, i) => s + (i.total || 0), 0);
+  const paid     = invoices.reduce((s, i) => s + (parseFloat(i.paidAmount) || 0), 0);
+  const balance  = total - paid;
+  const partial  = invoices.filter(i => computeStatus(i) === 'partial').length;
 
   const el = document.getElementById('stats-bar');
   if (!el) return;
@@ -285,6 +326,7 @@ function renderStats() {
     <span>Total billed: <strong>${fmtMoney(total)}</strong></span>
     <span style="color:var(--success)">Collected: <strong>${fmtMoney(paid)}</strong></span>
     <span style="color:var(--danger)">Outstanding: <strong>${fmtMoney(balance)}</strong></span>
+    ${partial ? `<span style="color:var(--accent)"><strong>${partial}</strong> partial</span>` : ''}
   `;
 }
 
@@ -292,7 +334,6 @@ function renderStats() {
 document.addEventListener('DOMContentLoaded', () => {
   renderHistory();
   renderStats();
-
   document.getElementById('btn-export-xlsx')?.addEventListener('click', exportXLSX);
   document.getElementById('preview-modal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('preview-modal')) closeModal();

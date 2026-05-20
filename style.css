@@ -271,7 +271,10 @@ textarea { resize: vertical; min-height: 72px; }
 }
 .history-table tr:hover td { background: var(--brand-light); cursor: pointer; }
 .history-table tr.paid td { color: var(--muted); }
-.history-table td.no-click { cursor: default; }
+.history-table td.no-click { cursor: default; white-space: nowrap; }
+
+/* On desktop, hide the badge inside col-inv-id (status shown in its own column) */
+.col-inv-id .badge { display: none; }
 
 .badge {
   display: inline-block;
@@ -508,4 +511,73 @@ textarea { resize: vertical; min-height: 72px; }
     max-width: 100%;
   }
   .modal-body-scroll { overflow-x: auto; }
+
+  /* ── History table → card layout ── */
+  .history-scroll { overflow-x: visible; }
+  .history-table { min-width: unset; }
+  .history-table thead { display: none; }
+  .history-table,
+  .history-table tbody,
+  .history-table tr,
+  .history-table td { display: block; width: 100%; }
+
+  .history-table tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    padding: 12px;
+    background: var(--white);
+    cursor: pointer;
+  }
+  .history-table tr:hover td { background: transparent; }
+  .history-table tr:hover { background: var(--brand-light); }
+  .history-table tr.paid { color: var(--muted); }
+
+  .history-table td {
+    border: none;
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .history-table td::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--muted);
+    min-width: 68px;
+    flex-shrink: 0;
+  }
+
+  /* Invoice # card header — full width, no label prefix */
+  .history-table td.col-inv-id {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--brand);
+    padding-bottom: 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+    gap: 6px;
+  }
+  .history-table td.col-inv-id::before { display: none; }
+  .history-table td.col-inv-id .badge { display: inline-block; }
+
+  /* Hide the standalone status cell (shown in card header) */
+  .history-table td.col-status-cell { display: none; }
+
+  /* Action buttons — wrap freely, no label prefix */
+  .history-table td.no-click {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 10px;
+    margin-top: 6px;
+    border-top: 1px dashed var(--border);
+    white-space: normal;
+    cursor: default;
+  }
+  .history-table td.no-click::before { display: none; }
+  .history-table td.no-click .btn { flex: 1 1 auto; text-align: center; }
 }

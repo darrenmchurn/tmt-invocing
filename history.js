@@ -82,25 +82,24 @@ function renderHistory() {
     if (status === 'paid') tr.classList.add('paid');
 
     tr.innerHTML = `
-      <td>${escHtml(inv.id)} <span class="version-badge">v${ver}</span></td>
-      <td>${inv.date || ''}</td>
-      <td>${escHtml(inv.client?.name || '—')}</td>
-      <td>${fmtMoney(inv.total)}</td>
-      <td>${fmtMoney(paid)}</td>
-      <td>${fmtMoney(balance)}</td>
-      <td>${inv.dueDate || ''}</td>
-      <td>${statusBadge(status)}</td>
-      <td class="no-click" style="white-space:nowrap">
+      <td class="col-inv-id">${escHtml(inv.id)} <span class="version-badge">v${ver}</span> ${statusBadge(status)}</td>
+      <td data-label="Date">${inv.date || ''}</td>
+      <td data-label="Client">${escHtml(inv.client?.name || '—')}</td>
+      <td data-label="Total">${fmtMoney(inv.total)}</td>
+      <td data-label="Paid">${fmtMoney(paid)}</td>
+      <td data-label="Balance">${fmtMoney(balance)}</td>
+      <td data-label="Due">${inv.dueDate || ''}</td>
+      <td class="col-status-cell">${statusBadge(status)}</td>
+      <td class="no-click">
         <button class="btn btn-sm ${status === 'paid' ? 'btn-ghost' : 'btn-success'}"
           onclick="togglePaid('${escHtml(inv.id)}', event)">
           ${status === 'paid' ? 'Mark Unpaid' : 'Mark Paid'}
         </button>
         <button class="btn btn-sm btn-accent"
-          onclick="markPartial('${escHtml(inv.id)}', event)" style="margin-left:6px">Partial</button>
-        <a class="btn btn-sm btn-ghost" href="index.html?edit=${encodeURIComponent(inv.id)}"
-          style="margin-left:6px">Edit</a>
+          onclick="markPartial('${escHtml(inv.id)}', event)">Partial</button>
+        <a class="btn btn-sm btn-ghost" href="index.html?edit=${encodeURIComponent(inv.id)}">Edit</a>
         <button class="btn btn-sm btn-danger"
-          onclick="deleteInvoice('${escHtml(inv.id)}', event)" style="margin-left:6px">Delete</button>
+          onclick="deleteInvoice('${escHtml(inv.id)}', event)">Delete</button>
       </td>
     `;
 

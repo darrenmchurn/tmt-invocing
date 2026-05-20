@@ -216,6 +216,13 @@ textarea { resize: vertical; min-height: 72px; }
   border-top: 2px solid var(--border);
   padding-top: 8px;
 }
+.totals-table tr.balance-row td {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--danger);
+  border-top: 2px solid var(--border);
+  padding-top: 8px;
+}
 .tax-rate-field { display: flex; align-items: center; gap: 6px; }
 .tax-rate-field input { width: 60px; flex-shrink: 0; }
 .tax-rate-field span { color: var(--muted); font-size: 13px; }
@@ -397,8 +404,8 @@ textarea { resize: vertical; min-height: 72px; }
   .field-group.col-3,
   .field-group.col-4 { grid-template-columns: 1fr; }
 
-  /* Keep date fields side-by-side (short enough to fit) */
-  .inv-dates .field-group.col-2 { grid-template-columns: 1fr 1fr; gap: 8px; }
+  /* Stack date fields vertically on mobile — too cramped side by side at 375px */
+  .inv-dates .field-group.col-2 { grid-template-columns: 1fr; }
 
   /* Larger touch targets */
   .btn { min-height: 44px; padding: 10px 16px; font-size: 15px; }

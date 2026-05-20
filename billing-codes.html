@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TMT Invoicing — Billing Codes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="top-nav">
+  <span class="brand">TMT Waste Solutions</span>
+  <a href="index.html">New Invoice</a>
+  <a href="history.html">History</a>
+  <a href="billing-codes.html" class="active">Billing Codes</a>
+</nav>
+
+<div class="page-wrap">
+
+  <div id="alert-box" class="alert" style="display:none"></div>
+
+  <!-- Add / Edit form -->
+  <div class="card">
+    <div class="card-title" id="form-title">Add Billing Code</div>
+    <input type="hidden" id="edit-id">
+    <div class="field-group col-2">
+      <div>
+        <label>Billing Code Name *</label>
+        <input type="text" id="code-name" placeholder="e.g. Bin 2001 - 25 yard - 3 day" autocomplete="off">
+      </div>
+      <div>
+        <label>Default Price ($) *</label>
+        <input type="number" id="code-price" min="0" step="0.01" placeholder="0.00" inputmode="decimal">
+      </div>
+    </div>
+    <div class="action-bar" style="margin-top:16px">
+      <button class="btn btn-primary" id="btn-save-code">&#10003; Save Code</button>
+      <button class="btn btn-ghost" id="btn-cancel-edit" style="display:none">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Billing codes list -->
+  <div class="card" style="padding:0">
+    <div class="history-scroll">
+      <table class="history-table" id="codes-table">
+        <thead>
+          <tr>
+            <th>Billing Code Name</th>
+            <th>Default Price</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="codes-body"></tbody>
+      </table>
+    </div>
+    <div id="codes-empty" class="empty-state" style="display:none">
+      <p>No billing codes yet. Add one above.</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="billing-codes.js"></script>
+</body>
+</html>

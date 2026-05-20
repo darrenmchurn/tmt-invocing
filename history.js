@@ -5,7 +5,6 @@
    ===================================================== */
 
 const LS_INVOICES = 'tmt_invoices';
-const LS_NEXT_NUM = 'tmt_next_invoice_num';
 
 const TMT_CONFIG = {
   companyName:  'TMT Waste Solutions',
@@ -58,6 +57,8 @@ function renderHistory() {
   document.getElementById('btn-export-xlsx').style.display = '';
 
   invoices.forEach(inv => {
+    const paid    = parseFloat(inv.paidAmount) || 0;
+    const balance = inv.total - paid;
     const tr = document.createElement('tr');
     if (inv.status === 'paid') tr.classList.add('paid');
     tr.innerHTML = `
@@ -65,6 +66,8 @@ function renderHistory() {
       <td>${inv.date || ''}</td>
       <td>${escHtml(inv.client?.name || '—')}</td>
       <td>${fmtMoney(inv.total)}</td>
+      <td>${fmtMoney(paid)}</td>
+      <td>${fmtMoney(balance)}</td>
       <td>${inv.dueDate || ''}</td>
       <td class="no-click">
         <button class="btn btn-sm ${inv.status === 'paid' ? 'btn-ghost' : 'btn-success'}"
@@ -77,11 +80,10 @@ function renderHistory() {
           onclick="deleteInvoice('${escHtml(inv.id)}', event)">Delete</button>
       </td>
     `;
-    tr.querySelector('td:nth-child(1)').addEventListener('click', () => previewInvoice(inv.id));
-    tr.querySelector('td:nth-child(2)').addEventListener('click', () => previewInvoice(inv.id));
-    tr.querySelector('td:nth-child(3)').addEventListener('click', () => previewInvoice(inv.id));
-    tr.querySelector('td:nth-child(4)').addEventListener('click', () => previewInvoice(inv.id));
-    tr.querySelector('td:nth-child(5)').addEventListener('click', () => previewInvoice(inv.id));
+    // Click first 7 cells to open preview
+    [...tr.querySelectorAll('td:not(.no-click)')].forEach(td =>
+      td.addEventListener('click', () => previewInvoice(inv.id))
+    );
     tbody.appendChild(tr);
   });
 }
@@ -95,6 +97,7 @@ function toggleStatus(id, e) {
   list[idx].status = list[idx].status === 'paid' ? 'unpaid' : 'paid';
   saveInvoices(list);
   renderHistory();
+  renderStats();
 }
 window.toggleStatus = toggleStatus;
 
@@ -102,9 +105,9 @@ window.toggleStatus = toggleStatus;
 function deleteInvoice(id, e) {
   e.stopPropagation();
   if (!confirm(`Delete invoice ${id}? This cannot be undone.`)) return;
-  const list = getInvoices().filter(i => i.id !== id);
-  saveInvoices(list);
+  saveInvoices(getInvoices().filter(i => i.id !== id));
   renderHistory();
+  renderStats();
   showAlert(`Invoice ${id} deleted.`);
 }
 window.deleteInvoice = deleteInvoice;
@@ -125,22 +128,24 @@ window.closeModal = closeModal;
 
 // ── Invoice HTML renderer ───────────────────────────────
 function renderInvoiceHTML(inv) {
-  const cfg = TMT_CONFIG;
+  const cfg          = TMT_CONFIG;
   const companyLines = [cfg.phone, cfg.email, cfg.address].filter(Boolean).join(' · ');
 
   const itemRows = (inv.lineItems || []).map(it => `
     <tr>
       <td>${escHtml(it.description)}</td>
-      <td class="right" style="text-align:right">${it.qty}</td>
-      <td class="right" style="text-align:right">${fmtMoney(it.rate)}</td>
-      <td class="right" style="text-align:right">${fmtMoney(it.total)}</td>
+      <td style="text-align:right">${it.qty}</td>
+      <td style="text-align:right">${fmtMoney(it.rate)}</td>
+      <td style="text-align:right">${fmtMoney(it.total)}</td>
     </tr>`).join('');
 
-  const paymentBlock = cfg.paymentLink
+  const paid       = parseFloat(inv.paidAmount) || 0;
+  const balance    = parseFloat(inv.balanceDue) ?? (inv.total - paid);
+
+  const paymentBlock = inv.paymentLink
     ? `<div class="preview-payment">
          <strong>Payment:</strong>
-         <a href="${escHtml(cfg.paymentLink)}" target="_blank">${escHtml(cfg.paymentLabel)}</a>
-         — ${escHtml(cfg.paymentLink)}
+         <a href="${escHtml(inv.paymentLink)}" target="_blank">${escHtml(inv.paymentLink)}</a>
        </div>`
     : '';
 
@@ -193,6 +198,8 @@ function renderInvoiceHTML(inv) {
           <tr><td>Subtotal</td><td>${fmtMoney(inv.subtotal)}</td></tr>
           <tr><td>Tax (${inv.taxRate}%)</td><td>${fmtMoney(inv.taxAmount)}</td></tr>
           <tr class="grand"><td>Total</td><td>${fmtMoney(inv.total)}</td></tr>
+          <tr><td>Amount Paid</td><td>${fmtMoney(paid)}</td></tr>
+          <tr class="grand"><td>Balance Due</td><td>${fmtMoney(balance)}</td></tr>
         </table>
       </div>
       ${paymentBlock}
@@ -205,16 +212,14 @@ function renderInvoiceHTML(inv) {
 async function exportModalPDF() {
   const previewEl = document.getElementById('invoice-preview');
   if (!previewEl) { showAlert('Open an invoice preview first.', 'error'); return; }
-
   try {
-    const canvas = await html2canvas(previewEl, { scale: 2, useCORS: true });
+    const canvas  = await html2canvas(previewEl, { scale: 2, useCORS: true });
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+    const pdf   = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const ratio = canvas.width / canvas.height;
-    const imgH  = pageW / ratio;
+    const imgH  = pageW / (canvas.width / canvas.height);
     const pages = Math.ceil(imgH / pageH);
     for (let i = 0; i < pages; i++) {
       if (i > 0) pdf.addPage();
@@ -234,35 +239,32 @@ function exportXLSX() {
   const invoices = getInvoices();
   if (!invoices.length) { showAlert('No invoices to export.', 'error'); return; }
 
-  const rows = [['Invoice #','Date','Due Date','Terms','Client Name','Client Address','Client Email','Client Phone','Subtotal','Tax Rate %','Tax Amount','Total','Status','Notes']];
+  const rows = [[
+    'Invoice #','Date','Due Date','Terms',
+    'Client Name','Client Address','Client Email','Client Phone',
+    'Subtotal','Tax Rate %','Tax Amount','Total','Amount Paid','Balance Due',
+    'Status','Notes'
+  ]];
 
   invoices.forEach(inv => {
+    const paid    = parseFloat(inv.paidAmount) || 0;
+    const balance = parseFloat(inv.balanceDue) ?? (inv.total - paid);
     rows.push([
-      inv.id,
-      inv.date,
-      inv.dueDate,
-      inv.terms,
-      inv.client?.name    || '',
-      inv.client?.address || '',
-      inv.client?.email   || '',
-      inv.client?.phone   || '',
-      inv.subtotal,
-      inv.taxRate,
-      inv.taxAmount,
-      inv.total,
-      inv.status,
-      inv.notes,
+      inv.id, inv.date, inv.dueDate, inv.terms,
+      inv.client?.name || '', inv.client?.address || '',
+      inv.client?.email || '', inv.client?.phone || '',
+      inv.subtotal, inv.taxRate, inv.taxAmount, inv.total,
+      paid, balance,
+      inv.status, inv.notes,
     ]);
   });
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-
   ws['!cols'] = [
     {wch:12},{wch:12},{wch:12},{wch:16},{wch:24},{wch:30},{wch:28},{wch:16},
-    {wch:12},{wch:10},{wch:12},{wch:12},{wch:10},{wch:30},
+    {wch:12},{wch:10},{wch:12},{wch:12},{wch:12},{wch:12},{wch:10},{wch:30},
   ];
-
   XLSX.utils.book_append_sheet(wb, ws, 'Invoices');
   XLSX.writeFile(wb, 'TMT-Invoice-History.xlsx');
   showAlert('Excel file downloaded!');
@@ -271,18 +273,18 @@ window.exportXLSX = exportXLSX;
 
 // ── Summary stats ───────────────────────────────────────
 function renderStats() {
-  const invoices = getInvoices();
+  const invoices  = getInvoices();
   const total     = invoices.reduce((s, i) => s + (i.total || 0), 0);
-  const paid      = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + (i.total || 0), 0);
-  const unpaid    = total - paid;
+  const paid      = invoices.reduce((s, i) => s + (parseFloat(i.paidAmount) || 0), 0);
+  const balance   = invoices.reduce((s, i) => s + (parseFloat(i.balanceDue) ?? ((i.total || 0) - (parseFloat(i.paidAmount) || 0))), 0);
 
   const el = document.getElementById('stats-bar');
   if (!el) return;
   el.innerHTML = `
     <span><strong>${invoices.length}</strong> invoices</span>
     <span>Total billed: <strong>${fmtMoney(total)}</strong></span>
-    <span style="color:var(--success)">Paid: <strong>${fmtMoney(paid)}</strong></span>
-    <span style="color:var(--danger)">Outstanding: <strong>${fmtMoney(unpaid)}</strong></span>
+    <span style="color:var(--success)">Collected: <strong>${fmtMoney(paid)}</strong></span>
+    <span style="color:var(--danger)">Outstanding: <strong>${fmtMoney(balance)}</strong></span>
   `;
 }
 
@@ -292,11 +294,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderStats();
 
   document.getElementById('btn-export-xlsx')?.addEventListener('click', exportXLSX);
-
   document.getElementById('preview-modal')?.addEventListener('click', e => {
     if (e.target === document.getElementById('preview-modal')) closeModal();
   });
-
   document.getElementById('btn-modal-pdf')?.addEventListener('click', exportModalPDF);
   document.getElementById('btn-modal-close')?.addEventListener('click', closeModal);
 });

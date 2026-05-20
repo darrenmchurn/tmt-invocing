@@ -11,7 +11,8 @@
 <nav class="top-nav">
   <span class="brand">TMT Waste Solutions</span>
   <a href="index.html" class="active">New Invoice</a>
-  <a href="history.html">Invoice History</a>
+  <a href="history.html">History</a>
+  <a href="billing-codes.html">Billing Codes</a>
 </nav>
 
 <div class="page-wrap">
@@ -94,7 +95,7 @@
       <table class="line-items-table">
         <thead>
           <tr>
-            <th class="col-type">Type</th>
+            <th class="col-type">Billing Code</th>
             <th class="col-desc">Description</th>
             <th class="col-qty">Qty</th>
             <th class="col-rate">Rate ($)</th>
@@ -120,7 +121,7 @@
           <td>
             <div class="tax-rate-field">
               Tax
-              <input type="number" id="tax-rate" value="0" min="0" max="100" step="0.01" inputmode="decimal">
+              <input type="number" id="tax-rate" value="8.25" min="0" max="100" step="0.01" inputmode="decimal">
               <span>%</span>
             </div>
           </td>
@@ -129,6 +130,17 @@
         <tr class="total-row">
           <td>Total</td>
           <td id="total-display">$0.00</td>
+        </tr>
+        <tr>
+          <td><label style="display:inline;font-weight:600;color:var(--muted)">Amount Paid</label></td>
+          <td>
+            <input type="number" id="paid-amount" min="0" step="0.01" placeholder="0.00"
+              inputmode="decimal" style="width:100%;text-align:right">
+          </td>
+        </tr>
+        <tr class="balance-row">
+          <td>Balance Due</td>
+          <td id="balance-display">$0.00</td>
         </tr>
       </table>
     </div>

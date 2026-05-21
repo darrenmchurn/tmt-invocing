@@ -255,6 +255,16 @@ function renderInvoiceHTML(inv) {
         </div>
       </div>
 
+      ${(inv.rentalDrop || inv.rentalPick || inv.rentalDays) ? `
+      <div class="inv-rental-strip">
+        <div class="inv-section-label">Rental Details</div>
+        <div class="inv-rental-row">
+          ${inv.rentalDrop ? `<div class="inv-rental-item"><span>Drop Off</span>${inv.rentalDrop}</div>` : ''}
+          ${inv.rentalPick ? `<div class="inv-rental-item"><span>Pickup</span>${inv.rentalPick}</div>` : ''}
+          ${inv.rentalDays ? `<div class="inv-rental-item"><span>Duration</span>${inv.rentalDays} day${inv.rentalDays != 1 ? 's' : ''}</div>` : ''}
+        </div>
+      </div>` : ''}
+
       <div class="inv-services-wrap">
         <div class="inv-section-label">Services</div>
         <table class="inv-services-table">

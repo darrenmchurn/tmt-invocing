@@ -446,6 +446,33 @@ textarea { resize: vertical; min-height: 72px; }
 }
 .inv-details-table td:last-child { font-weight: 600; color: #1c2b3a; }
 
+/* Rental Details strip */
+.inv-rental-strip {
+  padding: 16px 36px;
+  background: #f7f9fc;
+  border-bottom: 1px solid #eaeff4;
+}
+.inv-rental-row {
+  display: flex;
+  gap: 36px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.inv-rental-item {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1c2b3a;
+}
+.inv-rental-item span {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a9ab0;
+  margin-bottom: 3px;
+}
+
 /* Services */
 .inv-services-wrap { padding: 24px 36px 0; }
 .inv-services-table {

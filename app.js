@@ -20,8 +20,16 @@ const LS_NEXT_NUM      = 'tmt_next_invoice_num';
 const LS_BILLING_CODES = 'tmt_billing_codes';
 
 const DEFAULT_BILLING_CODES = [
-  { id: 'bc1', name: 'Bin 2001 - 25 yard - 3 day', defaultPrice: 350 },
-  { id: 'bc2', name: 'Bin 2001 - 25 yard - 5 day', defaultPrice: 400 },
+  { id: 'bc1',  name: 'Bin 2001 - 25 yard - 3 day', defaultPrice: 350, rentalDays: 3  },
+  { id: 'bc2',  name: 'Bin 2001 - 25 yard - 5 day', defaultPrice: 400, rentalDays: 5  },
+  { id: 'bc3',  name: '20-03 - 20 yard - 3 day',    defaultPrice: 400, rentalDays: 3  },
+  { id: 'bc4',  name: '20-05 - 20 yard - 5 day',    defaultPrice: 450, rentalDays: 5  },
+  { id: 'bc5',  name: '20-07 - 20 yard - 7 day',    defaultPrice: 500, rentalDays: 7  },
+  { id: 'bc6',  name: '20-14 - 20 yard - 14 day',   defaultPrice: 600, rentalDays: 14 },
+  { id: 'bc7',  name: '25-03 - 25 yard - 3 day',    defaultPrice: 450, rentalDays: 3  },
+  { id: 'bc8',  name: '25-05 - 25 yard - 5 day',    defaultPrice: 500, rentalDays: 5  },
+  { id: 'bc9',  name: '25-07 - 25 yard - 7 day',    defaultPrice: 550, rentalDays: 7  },
+  { id: 'bc10', name: '25-14 - 25 yard - 14 day',   defaultPrice: 650, rentalDays: 14 },
 ];
 
 // ── Helpers ────────────────────────────────────────────
@@ -37,7 +45,17 @@ function getBillingCodes() {
     localStorage.setItem(LS_BILLING_CODES, JSON.stringify(DEFAULT_BILLING_CODES));
     return DEFAULT_BILLING_CODES;
   }
-  return JSON.parse(stored);
+  let codes = JSON.parse(stored);
+  // Merge any new default codes not yet in localStorage
+  let changed = false;
+  DEFAULT_BILLING_CODES.forEach(def => {
+    if (!codes.find(c => c.id === def.id)) {
+      codes.push(def);
+      changed = true;
+    }
+  });
+  if (changed) localStorage.setItem(LS_BILLING_CODES, JSON.stringify(codes));
+  return codes;
 }
 function getNextNum() {
   return parseInt(localStorage.getItem(LS_NEXT_NUM) || '1', 10);
@@ -52,10 +70,41 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 function addDays(dateStr, days) {
-  const d = new Date(dateStr);
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00'); // noon avoids DST boundary shifts
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
 }
+function diffDays(startStr, endStr) {
+  if (!startStr || !endStr) return null;
+  const s = new Date(startStr + 'T12:00:00');
+  const e = new Date(endStr   + 'T12:00:00');
+  return Math.round((e - s) / 86400000);
+}
+
+// ── Rental date auto-calculation ───────────────────────
+function calcRentalDates(source) {
+  const dropEl = document.getElementById('rental-drop');
+  const pickEl = document.getElementById('rental-pick');
+  const durEl  = document.getElementById('rental-duration');
+  if (!dropEl || !pickEl || !durEl) return;
+
+  const drop = dropEl.value;
+  const pick = pickEl.value;
+  const dur  = parseInt(durEl.value) || 0;
+
+  if (source === 'drop') {
+    if (drop && dur > 0)   pickEl.value = addDays(drop, dur);   // drop + dur → pick
+    else if (drop && pick) { const d = diffDays(drop, pick); if (d >= 0) durEl.value = d; } // drop + pick → dur
+  } else if (source === 'pick') {
+    if (drop && pick)      { const d = diffDays(drop, pick); if (d >= 0) durEl.value = d; } // drop + pick → dur
+    else if (pick && dur)  dropEl.value = addDays(pick, -dur);  // pick + dur → drop
+  } else if (source === 'dur') {
+    if (drop && dur > 0)   pickEl.value = addDays(drop, dur);   // drop + dur → pick
+    else if (pick && dur)  dropEl.value = addDays(pick, -dur);  // pick + dur → drop
+  }
+}
+window.calcRentalDates = calcRentalDates;
 function termsToOffset(terms) {
   const map = { 'Due on Receipt': 0, 'Net 15': 15, 'Net 30': 30, 'Net 60': 60 };
   return map[terms] ?? 0;
@@ -121,6 +170,11 @@ function onBillingCodeChange(sel) {
   descEl.value = code.name;
   rateEl.value = code.defaultPrice;
   recalcRow(rateEl);
+  // Auto-fill rental duration from billing code
+  if (code.rentalDays > 0) {
+    const durEl = document.getElementById('rental-duration');
+    if (durEl) { durEl.value = code.rentalDays; calcRentalDates('dur'); }
+  }
 }
 
 function recalcRow(input) {
@@ -219,6 +273,9 @@ function collectInvoice() {
     total,
     paidAmount: paidAmt,
     balanceDue: total - paidAmt,
+    rentalDrop:  document.getElementById('rental-drop').value,
+    rentalPick:  document.getElementById('rental-pick').value,
+    rentalDays:  parseInt(document.getElementById('rental-duration').value) || 0,
     paymentLink: document.getElementById('payment-link-input').value.trim(),
     notes:       document.getElementById('notes').value.trim(),
     status:      computeStatus(total, paidAmt),
@@ -280,7 +337,10 @@ function loadInvoiceForEdit(inv) {
   document.getElementById('payment-link-input').value = inv.paymentLink || '';
   document.getElementById('tax-rate').value       = inv.taxRate         ?? TMT_CONFIG.defaultTaxRate;
 
-  document.getElementById('paid-amount').value = inv.paidAmount || 0;
+  document.getElementById('rental-drop').value      = inv.rentalDrop || '';
+  document.getElementById('rental-pick').value      = inv.rentalPick || '';
+  document.getElementById('rental-duration').value  = inv.rentalDays  || '';
+  document.getElementById('paid-amount').value      = inv.paidAmount  || 0;
 
   document.getElementById('line-items-body').innerHTML = '';
   rowCount = 0;
@@ -361,6 +421,16 @@ function renderPreview(inv) {
       </div>
     </div>
 
+    ${(inv.rentalDrop || inv.rentalPick || inv.rentalDays) ? `
+    <div class="inv-rental-strip">
+      <div class="inv-section-label">Rental Details</div>
+      <div class="inv-rental-row">
+        ${inv.rentalDrop ? `<div class="inv-rental-item"><span>Drop Off</span>${inv.rentalDrop}</div>` : ''}
+        ${inv.rentalPick ? `<div class="inv-rental-item"><span>Pickup</span>${inv.rentalPick}</div>` : ''}
+        ${inv.rentalDays ? `<div class="inv-rental-item"><span>Duration</span>${inv.rentalDays} day${inv.rentalDays != 1 ? 's' : ''}</div>` : ''}
+      </div>
+    </div>` : ''}
+
     <div class="inv-services-wrap">
       <div class="inv-section-label">Services</div>
       <table class="inv-services-table">
@@ -440,6 +510,9 @@ function newInvoice() {
   document.getElementById('payment-link-input').value = TMT_CONFIG.paymentLink;
   document.getElementById('tax-rate').value            = TMT_CONFIG.defaultTaxRate;
   document.getElementById('paid-amount').value         = 0;
+  document.getElementById('rental-drop').value         = '';
+  document.getElementById('rental-pick').value         = '';
+  document.getElementById('rental-duration').value     = '';
 
   document.getElementById('line-items-body').innerHTML = '';
   rowCount = 0;
@@ -457,6 +530,9 @@ function newInvoice() {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('tax-rate')?.addEventListener('input', recalcTotals);
   document.getElementById('paid-amount')?.addEventListener('input', recalcTotals);
+  document.getElementById('rental-drop')?.addEventListener('change', () => calcRentalDates('drop'));
+  document.getElementById('rental-pick')?.addEventListener('change', () => calcRentalDates('pick'));
+  document.getElementById('rental-duration')?.addEventListener('input', () => calcRentalDates('dur'));
   document.getElementById('inv-date')?.addEventListener('change', updateDueDate);
   document.getElementById('inv-terms')?.addEventListener('change', updateDueDate);
   document.getElementById('inv-due')?.addEventListener('input', function() {

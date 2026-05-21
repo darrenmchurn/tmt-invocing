@@ -6,8 +6,16 @@
 const LS_BILLING_CODES = 'tmt_billing_codes';
 
 const DEFAULT_BILLING_CODES = [
-  { id: 'bc1', name: 'Bin 2001 - 25 yard - 3 day', defaultPrice: 350 },
-  { id: 'bc2', name: 'Bin 2001 - 25 yard - 5 day', defaultPrice: 400 },
+  { id: 'bc1',  name: 'Bin 2001 - 25 yard - 3 day', defaultPrice: 350, rentalDays: 3  },
+  { id: 'bc2',  name: 'Bin 2001 - 25 yard - 5 day', defaultPrice: 400, rentalDays: 5  },
+  { id: 'bc3',  name: '20-03 - 20 yard - 3 day',    defaultPrice: 400, rentalDays: 3  },
+  { id: 'bc4',  name: '20-05 - 20 yard - 5 day',    defaultPrice: 450, rentalDays: 5  },
+  { id: 'bc5',  name: '20-07 - 20 yard - 7 day',    defaultPrice: 500, rentalDays: 7  },
+  { id: 'bc6',  name: '20-14 - 20 yard - 14 day',   defaultPrice: 600, rentalDays: 14 },
+  { id: 'bc7',  name: '25-03 - 25 yard - 3 day',    defaultPrice: 450, rentalDays: 3  },
+  { id: 'bc8',  name: '25-05 - 25 yard - 5 day',    defaultPrice: 500, rentalDays: 5  },
+  { id: 'bc9',  name: '25-07 - 25 yard - 7 day',    defaultPrice: 550, rentalDays: 7  },
+  { id: 'bc10', name: '25-14 - 25 yard - 14 day',   defaultPrice: 650, rentalDays: 14 },
 ];
 
 // ── Helpers ────────────────────────────────────────────
@@ -17,7 +25,17 @@ function getBillingCodes() {
     localStorage.setItem(LS_BILLING_CODES, JSON.stringify(DEFAULT_BILLING_CODES));
     return DEFAULT_BILLING_CODES;
   }
-  return JSON.parse(stored);
+  let codes = JSON.parse(stored);
+  // Merge any new default codes not yet in localStorage
+  let changed = false;
+  DEFAULT_BILLING_CODES.forEach(def => {
+    if (!codes.find(c => c.id === def.id)) {
+      codes.push(def);
+      changed = true;
+    }
+  });
+  if (changed) saveBillingCodes(codes);
+  return codes;
 }
 function saveBillingCodes(codes) {
   localStorage.setItem(LS_BILLING_CODES, JSON.stringify(codes));
@@ -62,6 +80,7 @@ function renderCodes() {
     tr.innerHTML = `
       <td>${escHtml(code.name)}</td>
       <td>${fmtMoney(code.defaultPrice)}</td>
+      <td>${code.rentalDays ? code.rentalDays + ' day' + (code.rentalDays !== 1 ? 's' : '') : '—'}</td>
       <td class="no-click" style="white-space:nowrap">
         <button class="btn btn-ghost btn-sm" onclick="startEdit('${escHtml(code.id)}')">Edit</button>
         <button class="btn btn-danger btn-sm" style="margin-left:6px" onclick="deleteCode('${escHtml(code.id)}')">Delete</button>
@@ -75,8 +94,9 @@ function renderCodes() {
 
 // ── Save (add or update) ───────────────────────────────
 function saveCode() {
-  const name  = document.getElementById('code-name').value.trim();
-  const price = parseFloat(document.getElementById('code-price').value);
+  const name   = document.getElementById('code-name').value.trim();
+  const price  = parseFloat(document.getElementById('code-price').value);
+  const days   = parseInt(document.getElementById('code-days').value) || 0;
   const editId = document.getElementById('edit-id').value;
 
   if (!name)         { showAlert('Please enter a billing code name.', 'error'); return; }
@@ -90,11 +110,12 @@ function saveCode() {
     if (idx >= 0) {
       codes[idx].name         = name;
       codes[idx].defaultPrice = price;
+      codes[idx].rentalDays   = days;
     }
     showAlert('Billing code updated!');
   } else {
     // Add new
-    codes.push({ id: genId(), name, defaultPrice: price });
+    codes.push({ id: genId(), name, defaultPrice: price, rentalDays: days });
     showAlert('Billing code added!');
   }
 
@@ -110,6 +131,7 @@ function startEdit(id) {
   document.getElementById('edit-id').value    = id;
   document.getElementById('code-name').value  = code.name;
   document.getElementById('code-price').value = code.defaultPrice;
+  document.getElementById('code-days').value  = code.rentalDays || '';
   document.getElementById('form-title').textContent = 'Edit Billing Code';
   document.getElementById('btn-cancel-edit').style.display = '';
   document.getElementById('code-name').focus();
@@ -143,6 +165,7 @@ function resetForm() {
   document.getElementById('edit-id').value    = '';
   document.getElementById('code-name').value  = '';
   document.getElementById('code-price').value = '';
+  document.getElementById('code-days').value  = '';
   document.getElementById('form-title').textContent = 'Add Billing Code';
   document.getElementById('btn-cancel-edit').style.display = 'none';
 }
@@ -155,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resetForm();
   });
   // Allow Enter key to save
-  ['code-name','code-price'].forEach(id => {
+  ['code-name','code-price','code-days'].forEach(id => {
     document.getElementById(id)?.addEventListener('keydown', e => {
       if (e.key === 'Enter') saveCode();
     });

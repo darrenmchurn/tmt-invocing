@@ -7,7 +7,7 @@
        need to touch. Then save and push to GitHub.
    ===================================================== */
 
-const TMT_PASSWORD = 'TMTwaste2026';   // ← Change this
+const TMT_PASSWORD = 'tmtinvoicing2026';   // ← Change this
 
 (function () {
   // Already authenticated this session → let straight through

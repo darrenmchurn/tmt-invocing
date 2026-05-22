@@ -808,6 +808,7 @@ textarea { resize: vertical; min-height: 72px; }
   flex-shrink: 0;
 }
 .dot-available  { background: var(--success); }
+.dot-scheduled  { background: #3949ab; }
 .dot-rented     { background: #6c7a89; }
 .dot-pickup-due { background: #e67e00; }
 .dot-overdue    { background: var(--danger); }
@@ -854,10 +855,11 @@ textarea { resize: vertical; min-height: 72px; }
   color: var(--muted);
   margin-right: 4px;
 }
-.fso-avail   { color: var(--success); }
-.fso-out     { color: #6c7a89; }
-.fso-pickup  { color: #e67e00; }
-.fso-overdue { color: var(--danger); }
+.fso-avail     { color: var(--success); }
+.fso-scheduled { color: #3949ab; }
+.fso-out       { color: #6c7a89; }
+.fso-pickup    { color: #e67e00; }
+.fso-overdue   { color: var(--danger); }
 
 /* Fleet table */
 .fleet-table { width: 100%; border-collapse: collapse; min-width: 720px; }
@@ -890,15 +892,17 @@ textarea { resize: vertical; min-height: 72px; }
 }
 
 /* Row color coding */
-.fleet-row-available td  { background: #f2faf5; }
-.fleet-row-rented    td  { background: var(--white); }
+.fleet-row-available  td { background: #f2faf5; }
+.fleet-row-scheduled  td { background: #f0f1ff; }
+.fleet-row-rented     td { background: var(--white); }
 .fleet-row-pickup-due td { background: #fff8ee; }
-.fleet-row-overdue   td  { background: #fff0f0; }
+.fleet-row-overdue    td { background: #fff0f0; }
 
-.fleet-row-available:hover td  { background: #e0f4e8; }
-.fleet-row-rented:hover    td  { background: var(--brand-light); }
+.fleet-row-available:hover  td { background: #e0f4e8; }
+.fleet-row-scheduled:hover  td { background: #e3e5ff; }
+.fleet-row-rented:hover     td { background: var(--brand-light); }
 .fleet-row-pickup-due:hover td { background: #fceedd; }
-.fleet-row-overdue:hover   td  { background: #fde0e0; }
+.fleet-row-overdue:hover    td { background: #fde0e0; }
 
 /* Fleet status badges */
 .fleet-badge {
@@ -912,6 +916,7 @@ textarea { resize: vertical; min-height: 72px; }
   white-space: nowrap;
 }
 .fb-available  { background: #e2f4eb; color: var(--success); }
+.fb-scheduled  { background: #e8eaf6; color: #3949ab; }
 .fb-rented     { background: #e8ecf0; color: #4a5a6a; }
 .fb-pickup-due { background: #fff0d0; color: #c86000; }
 .fb-overdue    { background: #fde8e8; color: var(--danger); }

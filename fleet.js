@@ -49,36 +49,59 @@ function getBinSize(name) {
 }
 
 // ── Status calculation ──────────────────────────────────
+// Status priority: overdue > pickup-due > rented > scheduled > available
 function calcBinStatus(bin, invoices) {
   const t = todayStr();
 
-  const candidates = invoices.filter(inv => {
-    if (inv.binId !== bin.id) return false;
-    if (!inv.rentalDrop)      return false;
-    return inv.rentalDrop <= t;
-  });
-  candidates.sort((a, b) => (b.rentalDrop || '').localeCompare(a.rentalDrop || ''));
-  const inv = candidates[0];
+  // All invoices tied to this bin that have a drop-off date
+  const allCandidates = invoices.filter(inv =>
+    inv.binId === bin.id && inv.rentalDrop
+  );
 
-  if (!inv) return { status: 'available', inv: null, days: null, daysRented: null };
-
-  const daysRented = diffDays(inv.rentalDrop, t);
-
-  // Pickup date has passed — use invoice payment status to decide
-  if (inv.rentalPick && inv.rentalPick < t) {
-    // Paid invoice = job complete, bin physically returned
-    if (inv.status === 'paid') {
-      return { status: 'available', inv: null, days: null, daysRented: null };
-    }
-    // Unpaid/partial = pickup was missed or invoice not settled → overdue
-    const days = diffDays(t, inv.rentalPick); // negative: how many days past due
-    return { status: 'overdue', inv, days, daysRented };
+  if (!allCandidates.length) {
+    return { status: 'available', inv: null, days: null, daysRented: null };
   }
 
-  const days = inv.rentalPick ? diffDays(t, inv.rentalPick) : null;
+  // ── Active rentals: drop-off date has arrived ──────────
+  const active = allCandidates
+    .filter(inv => inv.rentalDrop <= t)
+    .sort((a, b) => b.rentalDrop.localeCompare(a.rentalDrop)); // most recent first
 
-  if (days !== null && days <= 1) return { status: 'pickup-due', inv, days, daysRented };
-  return { status: 'rented', inv, days, daysRented };
+  if (active.length) {
+    const inv       = active[0];
+    const daysRented = diffDays(inv.rentalDrop, t);
+
+    // Pickup date is in the past → job is done or overdue
+    if (inv.rentalPick && inv.rentalPick < t) {
+      // Paid invoice = bin physically returned → available
+      if (inv.status === 'paid') {
+        return { status: 'available', inv: null, days: null, daysRented: null };
+      }
+      // Unpaid/partial = pickup was missed → overdue
+      const days = diffDays(t, inv.rentalPick); // negative number
+      return { status: 'overdue', inv, days, daysRented };
+    }
+
+    // Pickup date is today or in future
+    const days = inv.rentalPick ? diffDays(t, inv.rentalPick) : null;
+    if (days !== null && days <= 1) {
+      return { status: 'pickup-due', inv, days, daysRented };
+    }
+    return { status: 'rented', inv, days, daysRented };
+  }
+
+  // ── Scheduled: drop-off date is in the future ──────────
+  const upcoming = allCandidates
+    .filter(inv => inv.rentalDrop > t)
+    .sort((a, b) => a.rentalDrop.localeCompare(b.rentalDrop)); // soonest first
+
+  if (upcoming.length) {
+    const inv  = upcoming[0];
+    const days = diffDays(t, inv.rentalDrop); // days until drop-off
+    return { status: 'scheduled', inv, days, daysRented: null };
+  }
+
+  return { status: 'available', inv: null, days: null, daysRented: null };
 }
 
 // ── Summary bar ─────────────────────────────────────────
@@ -87,8 +110,6 @@ function renderSummary(results) {
   if (!el) return;
 
   const sizeOrder = ['20-Yard', '25-Yard', 'Other'];
-
-  // Group results by size
   const groups = {};
   results.forEach(r => {
     const size = getBinSize(r.bin.name);
@@ -96,20 +117,22 @@ function renderSummary(results) {
     groups[size].push(r);
   });
 
-  // Overall counts
-  const totalAvailable  = results.filter(r => r.status === 'available').length;
-  const totalOut        = results.filter(r => r.status !== 'available').length;
-  const totalPickupDue  = results.filter(r => r.status === 'pickup-due').length;
-  const totalOverdue    = results.filter(r => r.status === 'overdue').length;
+  const totalAvailable = results.filter(r => r.status === 'available').length;
+  const totalScheduled = results.filter(r => r.status === 'scheduled').length;
+  const totalRented    = results.filter(r => r.status === 'rented').length;
+  const totalPickupDue = results.filter(r => r.status === 'pickup-due').length;
+  const totalOverdue   = results.filter(r => r.status === 'overdue').length;
+  const totalOut       = totalRented + totalPickupDue + totalOverdue;
 
   let html = `
     <div class="fleet-summary-overall">
       <span class="fso-label">All Bins</span>
       <span><strong>${results.length}</strong> Total</span>
       <span class="fso-avail"><strong>${totalAvailable}</strong> Available</span>
+      ${totalScheduled ? `<span class="fso-scheduled"><strong>${totalScheduled}</strong> Scheduled</span>` : ''}
       <span class="fso-out"><strong>${totalOut}</strong> Out</span>
       ${totalPickupDue ? `<span class="fso-pickup"><strong>${totalPickupDue}</strong> Pickup Due</span>` : ''}
-      ${totalOverdue   ? `<span class="fso-overdue"><strong>${totalOverdue}</strong> Overdue</span>`    : ''}
+      ${totalOverdue   ? `<span class="fso-overdue"><strong>${totalOverdue}</strong> Overdue</span>` : ''}
     </div>
   `;
 
@@ -117,18 +140,21 @@ function renderSummary(results) {
     const group = groups[size];
     if (!group || !group.length) return;
     const avail     = group.filter(r => r.status === 'available').length;
-    const out       = group.filter(r => r.status !== 'available').length;
+    const scheduled = group.filter(r => r.status === 'scheduled').length;
+    const rented    = group.filter(r => r.status === 'rented').length;
     const pickupDue = group.filter(r => r.status === 'pickup-due').length;
     const overdue   = group.filter(r => r.status === 'overdue').length;
+    const out       = rented + pickupDue + overdue;
 
     html += `
       <div class="fleet-summary-section">
         <span class="fss-label">${size}</span>
         <span><strong>${group.length}</strong> total</span>
         <span class="fso-avail"><strong>${avail}</strong> available</span>
+        ${scheduled ? `<span class="fso-scheduled"><strong>${scheduled}</strong> scheduled</span>` : ''}
         <span class="fso-out"><strong>${out}</strong> out</span>
         ${pickupDue ? `<span class="fso-pickup"><strong>${pickupDue}</strong> pickup due</span>` : ''}
-        ${overdue   ? `<span class="fso-overdue"><strong>${overdue}</strong> overdue</span>`    : ''}
+        ${overdue   ? `<span class="fso-overdue"><strong>${overdue}</strong> overdue</span>` : ''}
       </div>
     `;
   });
@@ -156,7 +182,7 @@ function renderFleet() {
   const results = bins.map(bin => ({ bin, ...calcBinStatus(bin, invoices) }));
   renderSummary(results);
 
-  // Group by bin size, in a defined order
+  // Group by bin size in a defined order
   const sizeOrder = ['20-Yard', '25-Yard', 'Other'];
   const groups = {};
   results.forEach(r => {
@@ -183,20 +209,35 @@ function renderFleet() {
 
       const badge = {
         available:    '<span class="fleet-badge fb-available">&#11044; Available</span>',
+        scheduled:    '<span class="fleet-badge fb-scheduled">&#9632; Scheduled</span>',
         rented:       '<span class="fleet-badge fb-rented">&#9711; Rented</span>',
         'pickup-due': '<span class="fleet-badge fb-pickup-due">&#11044; Pickup Due</span>',
         overdue:      '<span class="fleet-badge fb-overdue">&#11044; Overdue</span>',
       }[status] || '';
 
-      const daysUntilDisplay = days === null   ? '—'
-        : days < 0   ? `${Math.abs(days)}d overdue`
-        : days === 0 ? 'Today'
-        : days === 1 ? 'Tomorrow'
-        : `${days} days`;
+      // "Days Until Pickup" column — contextual per status
+      let daysColText;
+      if (status === 'scheduled') {
+        daysColText = days === 0 ? 'Drop-off today'
+          : days === 1           ? 'Drop-off tomorrow'
+          : `Drop-off in ${days}d`;
+      } else if (days === null) {
+        daysColText = '—';
+      } else if (days < 0) {
+        daysColText = `${Math.abs(days)}d overdue`;
+      } else if (days === 0) {
+        daysColText = 'Today';
+      } else if (days === 1) {
+        daysColText = 'Tomorrow';
+      } else {
+        daysColText = `${days} days`;
+      }
 
-      const daysRentedDisplay = (daysRented !== null && status !== 'available')
+      const daysRentedDisplay = (daysRented !== null && status !== 'available' && status !== 'scheduled')
         ? `${daysRented} day${daysRented !== 1 ? 's' : ''}`
         : '—';
+
+      const urgentWeight = (status === 'pickup-due' || status === 'overdue') ? '700' : '400';
 
       tr.innerHTML = `
         <td><strong>${escHtml(bin.name)}</strong></td>
@@ -204,7 +245,7 @@ function renderFleet() {
         <td>${inv?.rentalDrop || '—'}</td>
         <td>${inv?.rentalPick || '—'}</td>
         <td>${daysRentedDisplay}</td>
-        <td style="font-weight:${days !== null && days <= 1 ? '700' : '400'}">${daysUntilDisplay}</td>
+        <td style="font-weight:${urgentWeight}">${daysColText}</td>
         <td>${escHtml(inv?.client?.name || '—')}</td>
         <td>${escHtml(inv?.id || '—')}</td>
       `;

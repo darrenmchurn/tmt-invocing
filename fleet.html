@@ -44,33 +44,17 @@
             <th>Status</th>
             <th>Drop-Off Date</th>
             <th>Expected Pickup</th>
+            <th>Days Rented</th>
             <th>Days Until Pickup</th>
             <th>Current Client</th>
             <th>Current Job #</th>
-            <th class="no-print"></th>
           </tr>
         </thead>
         <tbody id="fleet-body"></tbody>
       </table>
     </div>
     <div id="fleet-empty" class="empty-state" style="display:none">
-      <p>No bins added yet. Add your first bin below.</p>
-    </div>
-  </div>
-
-  <!-- Manage Bins -->
-  <div class="card">
-    <div class="card-title" id="bin-form-title">Add Bin</div>
-    <input type="hidden" id="bin-edit-id">
-    <div class="field-group col-2" style="max-width:420px">
-      <div>
-        <label>Bin ID / Number *</label>
-        <input type="text" id="bin-name" placeholder="e.g. 2001" autocomplete="off">
-      </div>
-      <div style="display:flex;align-items:flex-end;gap:8px">
-        <button class="btn btn-primary" id="btn-save-bin" style="flex:1">&#10003; Save</button>
-        <button class="btn btn-ghost" id="btn-cancel-bin" style="display:none">Cancel</button>
-      </div>
+      <p>No bins configured yet.</p>
     </div>
   </div>
 

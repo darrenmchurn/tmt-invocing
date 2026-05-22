@@ -812,21 +812,55 @@ textarea { resize: vertical; min-height: 72px; }
 .dot-pickup-due { background: #e67e00; }
 .dot-overdue    { background: var(--danger); }
 
+/* ── Fleet summary bar — two-tier layout ── */
 .fleet-summary {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
-  padding: 14px 20px;
-  background: var(--brand-light);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* Overall pill */
+.fleet-summary-overall,
+.fleet-summary-section {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 18px;
+  background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  margin-bottom: 20px;
+  box-shadow: var(--shadow);
   font-size: 14px;
+  flex: 1 1 260px;
 }
-.fleet-summary span { color: var(--text); }
+.fleet-summary-overall { border-left: 4px solid var(--brand); }
+.fleet-summary-section  { border-left: 4px solid #b0bec5; }
+
+.fso-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--brand);
+  margin-right: 4px;
+}
+.fss-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.fso-avail   { color: var(--success); }
+.fso-out     { color: #6c7a89; }
+.fso-pickup  { color: #e67e00; }
+.fso-overdue { color: var(--danger); }
 
 /* Fleet table */
-.fleet-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+.fleet-table { width: 100%; border-collapse: collapse; min-width: 720px; }
 .fleet-table th {
   background: var(--brand);
   color: var(--white);
@@ -843,8 +877,20 @@ textarea { resize: vertical; min-height: 72px; }
 }
 .fleet-table tr:last-child td { border-bottom: none; }
 
+/* Size group header rows */
+.fleet-size-header td {
+  background: #eef2f7;
+  color: var(--brand);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .10em;
+  padding: 7px 12px;
+  border-bottom: 2px solid var(--brand);
+}
+
 /* Row color coding */
-.fleet-row-available td  { background: #f0faf4; }
+.fleet-row-available td  { background: #f2faf5; }
 .fleet-row-rented    td  { background: var(--white); }
 .fleet-row-pickup-due td { background: #fff8ee; }
 .fleet-row-overdue   td  { background: #fff0f0; }
@@ -874,7 +920,7 @@ textarea { resize: vertical; min-height: 72px; }
 @media (max-width: 640px) {
   .fleet-page-header { flex-direction: column; align-items: flex-start; }
   .fleet-title { font-size: 18px; }
-  .fleet-summary { gap: 12px; padding: 12px; font-size: 13px; }
-
-  .fleet-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .fleet-summary { gap: 8px; }
+  .fleet-summary-overall,
+  .fleet-summary-section { padding: 10px 14px; font-size: 13px; gap: 10px; flex: 1 1 100%; }
 }

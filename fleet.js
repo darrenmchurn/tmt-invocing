@@ -62,15 +62,21 @@ function calcBinStatus(bin, invoices) {
 
   if (!inv) return { status: 'available', inv: null, days: null, daysRented: null };
 
-  // If pickup date is in the past, bin has been returned → available
-  if (inv.rentalPick && inv.rentalPick < t) {
-    return { status: 'available', inv: null, days: null, daysRented: null };
-  }
-
-  const days      = inv.rentalPick ? diffDays(t, inv.rentalPick) : null;
   const daysRented = diffDays(inv.rentalDrop, t);
 
-  if (days !== null && days < 0)  return { status: 'overdue',    inv, days, daysRented };
+  // Pickup date has passed — use invoice payment status to decide
+  if (inv.rentalPick && inv.rentalPick < t) {
+    // Paid invoice = job complete, bin physically returned
+    if (inv.status === 'paid') {
+      return { status: 'available', inv: null, days: null, daysRented: null };
+    }
+    // Unpaid/partial = pickup was missed or invoice not settled → overdue
+    const days = diffDays(t, inv.rentalPick); // negative: how many days past due
+    return { status: 'overdue', inv, days, daysRented };
+  }
+
+  const days = inv.rentalPick ? diffDays(t, inv.rentalPick) : null;
+
   if (days !== null && days <= 1) return { status: 'pickup-due', inv, days, daysRented };
   return { status: 'rented', inv, days, daysRented };
 }

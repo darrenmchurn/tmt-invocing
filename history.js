@@ -255,10 +255,11 @@ function renderInvoiceHTML(inv) {
         </div>
       </div>
 
-      ${(inv.rentalDrop || inv.rentalPick || inv.rentalDays) ? `
+      ${(inv.binId || inv.rentalDrop || inv.rentalPick || inv.rentalDays) ? `
       <div class="inv-rental-strip">
         <div class="inv-section-label">Rental Details</div>
         <div class="inv-rental-row">
+          ${inv.binId    ? `<div class="inv-rental-item"><span>Bin #</span>${escHtml(inv.binName || inv.binId)}</div>` : ''}
           ${inv.rentalDrop ? `<div class="inv-rental-item"><span>Drop Off</span>${inv.rentalDrop}</div>` : ''}
           ${inv.rentalPick ? `<div class="inv-rental-item"><span>Pickup</span>${inv.rentalPick}</div>` : ''}
           ${inv.rentalDays ? `<div class="inv-rental-item"><span>Duration</span>${inv.rentalDays} day${inv.rentalDays != 1 ? 's' : ''}</div>` : ''}
@@ -330,6 +331,7 @@ function exportXLSX() {
   const rows = [[
     'Invoice #','Version','Date','Due Date','Terms',
     'Client Name','Client Address','Client Email','Client Phone',
+    'Bin #','Drop Off','Pickup','Rental Days',
     'Subtotal','Tax Rate %','Tax Amount','Total','Amount Paid','Balance Due',
     'Status','Notes'
   ]];
@@ -342,6 +344,7 @@ function exportXLSX() {
       inv.id, inv.version || 1, inv.date, inv.dueDate, inv.terms,
       inv.client?.name||'', inv.client?.address||'',
       inv.client?.email||'', inv.client?.phone||'',
+      inv.binName || inv.binId || '', inv.rentalDrop||'', inv.rentalPick||'', inv.rentalDays||'',
       inv.subtotal, inv.taxRate, inv.taxAmount, inv.total,
       paid, balance, status, inv.notes,
     ]);
@@ -352,6 +355,7 @@ function exportXLSX() {
   ws['!cols'] = [
     {wch:12},{wch:8},{wch:12},{wch:12},{wch:16},
     {wch:24},{wch:30},{wch:28},{wch:16},
+    {wch:8},{wch:12},{wch:12},{wch:10},
     {wch:12},{wch:10},{wch:12},{wch:12},{wch:12},{wch:12},{wch:10},{wch:30},
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Invoices');

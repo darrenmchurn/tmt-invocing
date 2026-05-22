@@ -18,6 +18,7 @@ const TMT_CONFIG = {
 const LS_INVOICES      = 'tmt_invoices';
 const LS_NEXT_NUM      = 'tmt_next_invoice_num';
 const LS_BILLING_CODES = 'tmt_billing_codes';
+const LS_BINS          = 'tmt_bins';
 
 const DEFAULT_BILLING_CODES = [
   { id: 'bc1',  name: 'Bin 2001 - 25 yard - 3 day', defaultPrice: 350, rentalDays: 3  },
@@ -57,6 +58,32 @@ function getBillingCodes() {
   if (changed) localStorage.setItem(LS_BILLING_CODES, JSON.stringify(codes));
   return codes;
 }
+const DEFAULT_BINS = [
+  { id: 'bin-2001', name: '2001' },
+  { id: 'bin-2002', name: '2002' },
+  { id: 'bin-2501', name: '2501' },
+  { id: 'bin-2502', name: '2502' },
+  { id: 'bin-2503', name: '2503' },
+];
+function getBins() {
+  const stored = localStorage.getItem(LS_BINS);
+  if (!stored) { localStorage.setItem(LS_BINS, JSON.stringify(DEFAULT_BINS)); return DEFAULT_BINS; }
+  return JSON.parse(stored);
+}
+function getBinName(id) {
+  if (!id) return '';
+  const bin = getBins().find(b => b.id === id);
+  return bin ? bin.name : id;
+}
+function populateBinSelect() {
+  const sel = document.getElementById('bin-select');
+  if (!sel) return;
+  const bins = getBins();
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- Select Bin --</option>' +
+    bins.map(b => `<option value="${escHtml(b.id)}"${b.id === current ? ' selected' : ''}>${escHtml(b.name)}</option>`).join('');
+}
+
 function getNextNum() {
   return parseInt(localStorage.getItem(LS_NEXT_NUM) || '1', 10);
 }
@@ -273,6 +300,8 @@ function collectInvoice() {
     total,
     paidAmount: paidAmt,
     balanceDue: total - paidAmt,
+    binId:       document.getElementById('bin-select')?.value || '',
+    binName:     getBinName(document.getElementById('bin-select')?.value || ''),
     rentalDrop:  document.getElementById('rental-drop').value,
     rentalPick:  document.getElementById('rental-pick').value,
     rentalDays:  parseInt(document.getElementById('rental-duration').value) || 0,
@@ -341,6 +370,8 @@ function loadInvoiceForEdit(inv) {
   document.getElementById('rental-pick').value      = inv.rentalPick || '';
   document.getElementById('rental-duration').value  = inv.rentalDays  || '';
   document.getElementById('paid-amount').value      = inv.paidAmount  || 0;
+  const binSelEdit = document.getElementById('bin-select');
+  if (binSelEdit) binSelEdit.value = inv.binId || '';
 
   document.getElementById('line-items-body').innerHTML = '';
   rowCount = 0;
@@ -421,10 +452,11 @@ function renderPreview(inv) {
       </div>
     </div>
 
-    ${(inv.rentalDrop || inv.rentalPick || inv.rentalDays) ? `
+    ${(inv.binId || inv.rentalDrop || inv.rentalPick || inv.rentalDays) ? `
     <div class="inv-rental-strip">
       <div class="inv-section-label">Rental Details</div>
       <div class="inv-rental-row">
+        ${inv.binId    ? `<div class="inv-rental-item"><span>Bin #</span>${escHtml(inv.binName || inv.binId)}</div>` : ''}
         ${inv.rentalDrop ? `<div class="inv-rental-item"><span>Drop Off</span>${inv.rentalDrop}</div>` : ''}
         ${inv.rentalPick ? `<div class="inv-rental-item"><span>Pickup</span>${inv.rentalPick}</div>` : ''}
         ${inv.rentalDays ? `<div class="inv-rental-item"><span>Duration</span>${inv.rentalDays} day${inv.rentalDays != 1 ? 's' : ''}</div>` : ''}
@@ -513,6 +545,8 @@ function newInvoice() {
   document.getElementById('rental-drop').value         = '';
   document.getElementById('rental-pick').value         = '';
   document.getElementById('rental-duration').value     = '';
+  const binSelNew = document.getElementById('bin-select');
+  if (binSelNew) binSelNew.value = '';
 
   document.getElementById('line-items-body').innerHTML = '';
   rowCount = 0;
@@ -528,6 +562,7 @@ function newInvoice() {
 
 // ── Init ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  populateBinSelect();
   document.getElementById('tax-rate')?.addEventListener('input', recalcTotals);
   document.getElementById('paid-amount')?.addEventListener('input', recalcTotals);
   document.getElementById('rental-drop')?.addEventListener('change', () => calcRentalDates('drop'));

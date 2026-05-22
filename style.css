@@ -773,3 +773,108 @@ textarea { resize: vertical; min-height: 72px; }
   .history-table td.no-click::before { display: none; }
   .history-table td.no-click .btn { flex: 1 1 auto; text-align: center; }
 }
+
+/* ── Fleet page ── */
+.fleet-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.fleet-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--brand);
+}
+.fleet-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dot-available  { background: var(--success); }
+.dot-rented     { background: #6c7a89; }
+.dot-pickup-due { background: #e67e00; }
+.dot-overdue    { background: var(--danger); }
+
+.fleet-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  padding: 14px 20px;
+  background: var(--brand-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+.fleet-summary span { color: var(--text); }
+
+/* Fleet table */
+.fleet-table { width: 100%; border-collapse: collapse; min-width: 700px; }
+.fleet-table th {
+  background: var(--brand);
+  color: var(--white);
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.fleet-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  vertical-align: middle;
+}
+.fleet-table tr:last-child td { border-bottom: none; }
+
+/* Row color coding */
+.fleet-row-available td  { background: #f0faf4; }
+.fleet-row-rented    td  { background: var(--white); }
+.fleet-row-pickup-due td { background: #fff8ee; }
+.fleet-row-overdue   td  { background: #fff0f0; }
+
+.fleet-row-available:hover td  { background: #e0f4e8; }
+.fleet-row-rented:hover    td  { background: var(--brand-light); }
+.fleet-row-pickup-due:hover td { background: #fceedd; }
+.fleet-row-overdue:hover   td  { background: #fde0e0; }
+
+/* Fleet status badges */
+.fleet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.fb-available  { background: #e2f4eb; color: var(--success); }
+.fb-rented     { background: #e8ecf0; color: #4a5a6a; }
+.fb-pickup-due { background: #fff0d0; color: #c86000; }
+.fb-overdue    { background: #fde8e8; color: var(--danger); }
+
+/* Fleet page mobile */
+@media (max-width: 640px) {
+  .fleet-page-header { flex-direction: column; align-items: flex-start; }
+  .fleet-title { font-size: 18px; }
+  .fleet-summary { gap: 12px; padding: 12px; font-size: 13px; }
+
+  .fleet-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}

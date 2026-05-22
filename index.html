@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TMT Invoicing — New Invoice</title>
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
@@ -12,6 +12,7 @@
   <span class="brand">TMT Waste Solutions</span>
   <a href="index.html" class="active">New Invoice</a>
   <a href="history.html">History</a>
+  <a href="fleet.html">Fleet</a>
   <a href="billing-codes.html">Billing Codes</a>
 </nav>
 
@@ -95,7 +96,13 @@
 
     <!-- Rental Details -->
     <div class="card-title" style="margin-top:24px">Rental Details</div>
-    <div class="field-group col-3">
+    <div class="field-group col-4">
+      <div>
+        <label>Bin #</label>
+        <select id="bin-select">
+          <option value="">-- Select Bin --</option>
+        </select>
+      </div>
       <div>
         <label>Drop Off Date</label>
         <input type="date" id="rental-drop">
@@ -183,6 +190,6 @@
 <!-- CDN libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

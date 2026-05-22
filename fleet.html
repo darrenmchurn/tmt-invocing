@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TMT Invoicing — Fleet Status</title>
+  <link rel="stylesheet" href="style.css?v=5">
+</head>
+<body>
+
+<nav class="top-nav">
+  <span class="brand">TMT Waste Solutions</span>
+  <a href="index.html">New Invoice</a>
+  <a href="history.html">History</a>
+  <a href="fleet.html" class="active">Fleet</a>
+  <a href="billing-codes.html">Billing Codes</a>
+</nav>
+
+<div class="page-wrap">
+
+  <div id="alert-box" class="alert" style="display:none"></div>
+
+  <!-- Page header -->
+  <div class="fleet-page-header">
+    <h1 class="fleet-title">Bin Fleet Status</h1>
+    <div class="fleet-legend">
+      <span class="legend-item"><span class="legend-dot dot-available"></span>Available</span>
+      <span class="legend-item"><span class="legend-dot dot-rented"></span>Rented</span>
+      <span class="legend-item"><span class="legend-dot dot-pickup-due"></span>Pickup Due ≤24 hrs</span>
+      <span class="legend-item"><span class="legend-dot dot-overdue"></span>Overdue</span>
+    </div>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="fleet-summary" id="fleet-summary"></div>
+
+  <!-- Fleet table -->
+  <div class="card" style="padding:0; margin-bottom:24px">
+    <div class="history-scroll">
+      <table class="fleet-table" id="fleet-table">
+        <thead>
+          <tr>
+            <th>Bin ID</th>
+            <th>Status</th>
+            <th>Drop-Off Date</th>
+            <th>Expected Pickup</th>
+            <th>Days Until Pickup</th>
+            <th>Current Client</th>
+            <th>Current Job #</th>
+            <th class="no-print"></th>
+          </tr>
+        </thead>
+        <tbody id="fleet-body"></tbody>
+      </table>
+    </div>
+    <div id="fleet-empty" class="empty-state" style="display:none">
+      <p>No bins added yet. Add your first bin below.</p>
+    </div>
+  </div>
+
+  <!-- Manage Bins -->
+  <div class="card">
+    <div class="card-title" id="bin-form-title">Add Bin</div>
+    <input type="hidden" id="bin-edit-id">
+    <div class="field-group col-2" style="max-width:420px">
+      <div>
+        <label>Bin ID / Number *</label>
+        <input type="text" id="bin-name" placeholder="e.g. 2001" autocomplete="off">
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:8px">
+        <button class="btn btn-primary" id="btn-save-bin" style="flex:1">&#10003; Save</button>
+        <button class="btn btn-ghost" id="btn-cancel-bin" style="display:none">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script src="fleet.js?v=5"></script>
+</body>
+</html>
